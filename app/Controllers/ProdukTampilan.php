@@ -54,7 +54,7 @@ class ProdukTampilan extends BaseController
 
         // Redirect kembali ke halaman produk dengan pesan sukses
         session()->setFlashdata('message', 'Produk berhasil ditambahkan!');
-        return redirect()->to(base_url('produk'));
+        return redirect()->to(base_url('admin/produk'));
     }
 
     public function edit($id = null)
@@ -92,7 +92,7 @@ class ProdukTampilan extends BaseController
         $this->produkModel->update($id, $data);
 
         session()->setFlashdata('message', 'Produk berhasil diupdate!');
-        return redirect()->to(base_url('produk'));
+        return redirect()->to(base_url('admin/produk'));
     }
 
     public function hapus($id = null)
@@ -102,6 +102,6 @@ class ProdukTampilan extends BaseController
 
         // Redirect kembali ke halaman produk dengan pesan sukses
         session()->setFlashdata('message', 'Produk berhasil dihapus!');
-        return redirect()->to(base_url('produk'));
+        return redirect()->to(base_url('admin/produk'));
     }
 }

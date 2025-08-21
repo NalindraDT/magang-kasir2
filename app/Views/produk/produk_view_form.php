@@ -1,13 +1,11 @@
 <?= $this->extend('produk/layout') ?>
 
 <?= $this->section('content') ?>
-<main class="p-4 sm:ml-64">
-    <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 min-h-screen">
+<main class="p-4 pt-20 sm:ml-64">
+    <div class="p-4 rounded-lg dark:border-gray-700 min-h-screen">
         <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white"><?= isset($produk) ? 'Edit Produk' : 'Tambah Produk' ?></h1>
 
-        <!-- Form Tambah/Edit Produk -->
-        <!-- Perbaiki action form agar mengarah ke rute yang benar -->
-        <form action="<?= isset($produk) ? base_url('produk/update') : base_url('produk/simpan') ?>" method="post">
+        <form action="<?= isset($produk) ? base_url('admin/produk/update') : base_url('admin/produk/simpan') ?>" method="post">
             <input type="hidden" name="id_produk" value="<?= isset($produk) ? $produk['id_produk'] : '' ?>">
             <div class="grid gap-4 mb-4 grid-cols-2">
                 <div class="col-span-2">
@@ -26,7 +24,7 @@
             <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
                 Simpan Produk
             </button>
-            <a href="<?= base_url('produk') ?>" class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600 dark:hover:border-gray-600 dark:focus:ring-gray-700 ml-2">Batal</a>
+            <a href="<?= base_url('admin/produk') ?>" class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600 dark:hover:border-gray-600 dark:focus:ring-gray-700 ml-2">Batal</a>
         </form>
     </div>
 </main>

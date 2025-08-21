@@ -1,7 +1,7 @@
 <?= $this->extend('produk/layout') ?>
 <?= $this->section('content') ?>
 <main>
-    <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 min-h-screen">
+    <div class="p-4 pt-20 rounded-lg dark:border-gray-700 min-h-screen">
         <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Dashboard</h1>
         <!-- Card Section -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">

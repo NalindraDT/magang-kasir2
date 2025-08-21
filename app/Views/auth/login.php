@@ -21,6 +21,31 @@
 <body class="bg-gray-900">
     <div class="flex flex-col items-center p-8 bg-white dark:bg-gray-800 shadow-lg rounded-lg w-full max-w-md text-center">
         <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Login Admin</h1>
+
+        <?php if (session()->getFlashdata('error')): ?>
+            <div class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
+                <?= session()->getFlashdata('error') ?>
+            </div>
+        <?php endif; ?>
+        <?php if (session()->getFlashdata('message')): ?>
+            <div class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-gray-800 dark:text-green-400" role="alert">
+                <?= session()->getFlashdata('message') ?>
+            </div>
+        <?php endif; ?>
+
+        <form action="<?= base_url('auth/manual_login') ?>" method="post" class="w-full mb-4">
+            <div class="mb-4">
+                <input type="text" name="username" placeholder="Username atau Email" required class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+            </div>
+            <div class="mb-4">
+                <input type="password" name="password" placeholder="Password" required class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+            </div>
+            <button type="submit" class="w-full px-4 py-2 text-white font-semibold bg-blue-600 hover:bg-blue-700 transition-colors rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Login
+            </button>
+        </form>
+
+        <p class="mb-4 text-gray-500 dark:text-gray-400">atau</p>
         <a href="<?= base_url('auth/google/login') ?>" class="inline-flex items-center justify-center w-full px-4 py-2 text-white font-semibold bg-red-600 hover:bg-red-700 transition-colors rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
             <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M22.5 12.1c0-.8-.1-1.6-.3-2.4H12v4.5h6.4c-.2 1.5-.9 2.8-2.1 3.7l3.9 3c2.3-2.1 3.6-5.2 3.6-8.8z" fill="#4285F4"/>

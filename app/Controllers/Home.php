@@ -26,33 +26,28 @@ class Home extends BaseController
     }
 
     public function admin()
-    {
-        // Cek apakah pengguna sudah login
-        if (!session()->get('user_logged_in')) {
-            return redirect()->to(base_url('auth/login'));
-        }
+{
+    // Ambil semua data produk
+    $produks = $this->produkModel->findAll();
+    $data['jumlah_produk'] = count($produks);
 
-        // Ambil semua data produk
-        $produks = $this->produkModel->findAll();
-        $data['jumlah_produk'] = count($produks);
-
-        // Hitung total stok dari semua produk
-        $totalStok = 0;
-        foreach ($produks as $produk) {
-            $totalStok += $produk['stok'];
-        }
-        $data['total_stok'] = $totalStok;
-
-        // Hitung total penghasilan dari transaksi yang statusnya "Sukses"
-        $transaksisSukses = $this->detailPesananModel->where('status', 'Sukses')->findAll();
-        $totalPenghasilan = 0;
-        foreach ($transaksisSukses as $transaksi) {
-            $totalPenghasilan += $transaksi['total_harga'];
-        }
-        $data['total_penghasilan'] = 'Rp ' . number_format($totalPenghasilan, 0, ',', '.');
-        
-        return view('produk/dashboard', $data);
+    // Hitung total stok dari semua produk
+    $totalStok = 0;
+    foreach ($produks as $produk) {
+        $totalStok += $produk['stok'];
     }
+    $data['total_stok'] = $totalStok;
+
+    // Hitung total penghasilan dari transaksi yang statusnya "Sukses"
+    $transaksisSukses = $this->detailPesananModel->where('status', 'Sukses')->findAll();
+    $totalPenghasilan = 0;
+    foreach ($transaksisSukses as $transaksi) {
+        $totalPenghasilan += $transaksi['total_harga'];
+    }
+    $data['total_penghasilan'] = 'Rp ' . number_format($totalPenghasilan, 0, ',', '.');
+    
+    return view('produk/dashboard', $data);
+}
     
     public function pembeli()
     {

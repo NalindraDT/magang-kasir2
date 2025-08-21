@@ -4,10 +4,39 @@ namespace App\Controllers;
 
 use CodeIgniter\Controller;
 use Google\Client;
-use Google\Service\Oauth2; // Tambahkan ini
+use Google\Service\Oauth2;
+use App\Models\UserModel;
 
 class Auth extends BaseController
 {
+    protected $userModel;
+    public function __construct()
+    {
+        $this->userModel = new UserModel(); // Tambahkan ini
+    }
+    public function manualLogin()
+    {
+        $username = $this->request->getPost('username');
+        $password = $this->request->getPost('password');
+
+        $user = $this->userModel->where('email', $username)
+            ->orWhere('username', $username)
+            ->first();
+
+        if ($user && password_verify($password, $user['password'])) {
+            session()->set('user_logged_in', true);
+            session()->set('user_email', $user['email']);
+            session()->set('user_name', $user['username']);
+            session()->setFlashdata('message', 'Login berhasil!');
+
+            return redirect()->to(base_url('admin'));
+        }
+
+        // Ubah pesan error di sini
+        session()->setFlashdata('error', 'Password atau username salah, silahkan coba lagi');
+        return redirect()->back()->withInput();
+    }
+
     public function googleLogin()
     {
         $client = new Client();

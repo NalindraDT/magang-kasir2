@@ -1,12 +1,12 @@
 <?= $this->extend('produk/layout') ?>
 
 <?= $this->section('content') ?>
-<main class="p-4 sm:ml-64">
+<main class="p-4 pt-20 sm:ml-8">
     <div class="p-4 rounded-lg min-h-screen">
-        <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Riwayat Transaksi</h1>
+        <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white ml-8">Riwayat Transaksi</h1>
 
         <!-- Tabel Transaksi -->
-        <div class="relative overflow-x-auto shadow-md sm:rounded-lg mt-6 w-full max-w-4xl mx-auto">
+        <div class="relative overflow-x-auto shadow-md sm:rounded-lg mt-6 w-full max-w-6xl mx-auto ml-8">
             <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
@@ -21,7 +21,7 @@
                 </thead>
                 <tbody>
                     <?php
-                        if (empty($transaksis)):
+                    if (empty($transaksis)):
                     ?>
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                             <td colspan="7" class="px-6 py-4 text-center text-gray-500">Tidak ada riwayat transaksi.</td>
@@ -63,22 +63,22 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         <?php if (isset($item['status']) && $item['status'] == 'Sukses'): ?>
-                                            <a href="<?= base_url('transaksi/hapus/' . $item['id_detail']) ?>" ...
+                                            <a href="<?= base_url('admin/transaksi/hapus/' . $item['id_detail']) ?>" ...
                                                 class="font-medium text-red-600 dark:text-red-500 hover:underline" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini?')">
                                                 <svg class="w-4 h-4 text-red-800 dark:text-red-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
                                                     <path fill-rule="evenodd" d="M8.586 2.586A2 2 0 0 1 10 2h4a2 2 0 0 1 2 2v2h3a1 1 0 1 1 0 2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8H4a1 1 0 0 1 0-2h3V4a2 2 0 0 1 1.586-1.914ZM8 6h8V4h-2a2 2 0 1 1-4 0H8v2Zm2 5a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1Zm4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1Z" clip-rule="evenodd" />
                                                 </svg>
                                             </a>
                                         <?php elseif (isset($item['status']) && $item['status'] == 'Refund'): ?>
-                                            <a href="<?= base_url('transaksi/hapus/' . $item['id_detail']) ?>" class="font-medium text-red-600 dark:text-red-500 hover:underline" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini?')">
+                                            <a href="<?= base_url('admin/transaksi/hapus/' . $item['id_detail']) ?>" class="font-medium text-red-600 dark:text-red-500 hover:underline" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini?')">
                                                 <svg class="w-4 h-4 text-red-800 dark:text-red-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path fill-rule="evenodd" d="M8.586 2.586A2 2 0 0 1 10 2h4a2 2 0 0 1 2 2v2h3a1 1 0 1 1 0 2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8H4a1 1 0 0 1 0-2h3V4a2 2 0 0 1 1.586-1.914ZM8 6h8V4h-2a2 2 0 1 1-4 0H8v2Zm2 5a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1Zm4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1Z" clip-rule="evenodd"/>
+                                                    <path fill-rule="evenodd" d="M8.586 2.586A2 2 0 0 1 10 2h4a2 2 0 0 1 2 2v2h3a1 1 0 1 1 0 2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8H4a1 1 0 0 1 0-2h3V4a2 2 0 0 1 1.586-1.914ZM8 6h8V4h-2a2 2 0 1 1-4 0H8v2Zm2 5a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1Zm4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1Z" clip-rule="evenodd" />
                                                 </svg>
                                             </a>
                                         <?php else: ?>
                                             <span class="text-gray-500 font-medium">
                                                 <svg class="w-4 h-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path fill-rule="evenodd" d="M8.586 2.586A2 2 0 0 1 10 2h4a2 2 0 0 1 2 2v2h3a1 1 0 1 1 0 2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8H4a1 1 0 0 1 0-2h3V4a2 2 0 0 1 1.586-1.914ZM8 6h8V4h-2a2 2 0 1 1-4 0H8v2Zm2 5a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1Zm4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1Z" clip-rule="evenodd"/>
+                                                    <path fill-rule="evenodd" d="M8.586 2.586A2 2 0 0 1 10 2h4a2 2 0 0 1 2 2v2h3a1 1 0 1 1 0 2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8H4a1 1 0 0 1 0-2h3V4a2 2 0 0 1 1.586-1.914ZM8 6h8V4h-2a2 2 0 1 1-4 0H8v2Zm2 5a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1Zm4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1Z" clip-rule="evenodd" />
                                                 </svg>
                                             </span>
                                         <?php endif; ?>
