@@ -94,73 +94,89 @@
 
 <!-- Script Pagination -->
 <script>
-const rowsPerPage = 5;
-let currentPage = parseInt(new URLSearchParams(window.location.search).get("page")) || 1;
+    document.addEventListener("DOMContentLoaded", () => {
+        const rowsPerPage = 5;
+        const tableBody = document.getElementById("produk-table-body");
+        const rows = tableBody.querySelectorAll("tr");
+        const pagination = document.getElementById("pagination");
 
-const table = document.getElementById("produkTable");
-const rows = table.querySelectorAll("tbody tr");
-const totalPages = Math.ceil(rows.length / rowsPerPage);
-const pagination = document.getElementById("pagination");
+        let currentPage = 1;
+        const totalPages = Math.ceil(rows.length / rowsPerPage);
 
-function showPage(page) {
-    rows.forEach((row, index) => {
-        row.style.display = (index >= (page - 1) * rowsPerPage && index < page * rowsPerPage) ? "" : "none";
+        function showPage(page) {
+            rows.forEach((row, index) => {
+                row.style.display =
+                    index >= (page - 1) * rowsPerPage && index < page * rowsPerPage ?
+                    "" :
+                    "none";
+            });
+        }
+
+        function renderPagination() {
+            pagination.innerHTML = "";
+
+            if (totalPages <= 1) return;
+
+            // Tombol Prev
+            const prevBtn = document.createElement("button");
+            prevBtn.innerText = "‹ Prev";
+            prevBtn.className =
+                "px-3 py-1 rounded border border-gray-600 text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:text-gray-500";
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    updateTable();
+                }
+            };
+            pagination.appendChild(prevBtn);
+
+            // Tombol halaman
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement("button");
+                pageBtn.innerText = i;
+                pageBtn.className =
+                    "px-3 py-1 rounded border border-gray-600 " +
+                    (i === currentPage ?
+                        "bg-blue-600 text-white" :
+                        "text-gray-300 hover:bg-gray-700");
+                pageBtn.onclick = () => {
+                    currentPage = i;
+                    updateTable();
+                };
+                pagination.appendChild(pageBtn);
+            }
+
+            // Tombol Next
+            const nextBtn = document.createElement("button");
+            nextBtn.innerText = "Next ›";
+            nextBtn.className =
+                "px-3 py-1 rounded border border-gray-600 text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:text-gray-500";
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    updateTable();
+                }
+            };
+            pagination.appendChild(nextBtn);
+        }
+
+        
+        function updateTable() {
+            showPage(currentPage);
+            renderPagination();
+
+            // update query string di URL tanpa reload
+            const url = new URL(window.location);
+            url.searchParams.set("page", currentPage);
+            window.history.replaceState({}, "", url);
+        }
+        
+
+
+        updateTable();
     });
-}
-
-function renderPagination() {
-    pagination.innerHTML = "";
-
-    // Prev
-    if (currentPage > 1) {
-        const prevBtn = document.createElement("button");
-        prevBtn.textContent = "«";
-        prevBtn.className = "px-3 py-1 rounded bg-gray-200";
-        prevBtn.onclick = () => {
-            currentPage--;
-            updateTable();
-        };
-        pagination.appendChild(prevBtn);
-    }
-
-    // Numbered buttons
-    for (let i = 1; i <= totalPages; i++) {
-        const btn = document.createElement("button");
-        btn.textContent = i;
-        btn.className = "px-3 py-1 rounded " + (i === currentPage ? "bg-blue-600 text-white" : "bg-gray-200");
-        btn.onclick = () => {
-            currentPage = i;
-            updateTable();
-        };
-        pagination.appendChild(btn);
-    }
-
-    // Next
-    if (currentPage < totalPages) {
-        const nextBtn = document.createElement("button");
-        nextBtn.textContent = "»";
-        nextBtn.className = "px-3 py-1 rounded bg-gray-200";
-        nextBtn.onclick = () => {
-            currentPage++;
-            updateTable();
-        };
-        pagination.appendChild(nextBtn);
-    }
-}
-
-function updateTable() {
-    showPage(currentPage);
-    renderPagination();
-
-    // update query string di URL tanpa reload
-    const url = new URL(window.location);
-    url.searchParams.set("page", currentPage);
-    window.history.replaceState({}, "", url);
-}
-
-// Panggil pertama kali
-updateTable();
-
 </script>
 
 <?= $this->endSection() ?>
