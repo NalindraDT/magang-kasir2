@@ -2,7 +2,7 @@
 
 <?= $this->section('content') ?>
 <main class="p-4 pt-20 sm:ml-16 flex flex-col items-center">
-    <div class="p-4 rounded-lg min-h-screen max-w-full w-full">
+    <div class="p-4 rounded-lg max-w-full w-full">
         <h1 class="text-3xl font-extrabold mb-8 text-gray-900 dark:text-white tracking-tight">
             📦 Manajemen Produk
         </h1>
@@ -86,6 +86,89 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination -->
+        <div id="pagination" class="flex justify-center items-center gap-2 mt-6"></div>
     </div>
 </main>
+
+<!-- Script Pagination -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const rowsPerPage = 5;
+        const tableBody = document.getElementById("produk-table-body");
+        const rows = tableBody.querySelectorAll("tr");
+        const pagination = document.getElementById("pagination");
+
+        let currentPage = 1;
+        const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+        function showPage(page) {
+            rows.forEach((row, index) => {
+                row.style.display =
+                    index >= (page - 1) * rowsPerPage && index < page * rowsPerPage
+                        ? ""
+                        : "none";
+            });
+        }
+
+        function renderPagination() {
+            pagination.innerHTML = "";
+
+            if (totalPages <= 1) return;
+
+            // Tombol Prev
+            const prevBtn = document.createElement("button");
+            prevBtn.innerText = "‹ Prev";
+            prevBtn.className =
+                "px-3 py-1 rounded border border-gray-600 text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:text-gray-500";
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    updateTable();
+                }
+            };
+            pagination.appendChild(prevBtn);
+
+            // Tombol halaman
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement("button");
+                pageBtn.innerText = i;
+                pageBtn.className =
+                    "px-3 py-1 rounded border border-gray-600 " +
+                    (i === currentPage
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-300 hover:bg-gray-700");
+                pageBtn.onclick = () => {
+                    currentPage = i;
+                    updateTable();
+                };
+                pagination.appendChild(pageBtn);
+            }
+
+            // Tombol Next
+            const nextBtn = document.createElement("button");
+            nextBtn.innerText = "Next ›";
+            nextBtn.className =
+                "px-3 py-1 rounded border border-gray-600 text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:text-gray-500";
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    updateTable();
+                }
+            };
+            pagination.appendChild(nextBtn);
+        }
+
+        function updateTable() {
+            showPage(currentPage);
+            renderPagination();
+        }
+
+        updateTable();
+    });
+</script>
+
 <?= $this->endSection() ?>
