@@ -55,7 +55,9 @@ class TransaksiController extends BaseController
         $this->detailPesananModel->where('id_detail', $id_detail)->delete();
         // $this->pesananModel->delete($id_pesanan);
 
+        $page = $this->request->getGet('page') ?? 1;
+
         session()->setFlashdata('message', 'Transaksi berhasil dihapus!');
-        return redirect()->to(base_url('admin/transaksi'));
+        return redirect()->to(base_url('admin/transaksi?page=' . $page));
     }
 }

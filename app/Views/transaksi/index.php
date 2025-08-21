@@ -81,7 +81,7 @@
                                     </td>
                                     <td class="px-6 py-4 text-center">
                                         <?php if (in_array(($item['status'] ?? ''), ['Sukses', 'Refund'])): ?>
-                                            <a href="<?= base_url('admin/transaksi/hapus/' . $item['id_detail']) ?>"
+                                            <a href="<?= base_url('admin/transaksi/hapus/' . $item['id_detail'] . '?page=' . $currentPage) ?>"
                                                 class="inline-flex items-center justify-center p-2 rounded-full bg-red-600 hover:bg-red-500 text-white transition"
                                                 onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini?')">
                                                 <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">

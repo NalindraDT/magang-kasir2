@@ -100,8 +100,9 @@ class ProdukTampilan extends BaseController
         // Hapus produk dari database
         $this->produkModel->delete($id);
 
+        $page = $this->request->getGet('page') ?? 1;
         // Redirect kembali ke halaman produk dengan pesan sukses
         session()->setFlashdata('message', 'Produk berhasil dihapus!');
-        return redirect()->to(base_url('admin/produk'));
+        return redirect()->to(base_url('admin/produk?page=' . $page));
     }
 }
