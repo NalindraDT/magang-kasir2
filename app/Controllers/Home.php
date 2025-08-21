@@ -45,7 +45,18 @@ class Home extends BaseController
         $totalPenghasilan += $transaksi['total_harga'];
     }
     $data['total_penghasilan'] = 'Rp ' . number_format($totalPenghasilan, 0, ',', '.');
-    
+    $data['total_sukses'] = count($transaksisSukses);
+
+    //Hitung transaksi gagal
+    $transaksisGagal = $this->detailPesananModel->where('status', 'Refund')->findAll();
+    $data['total_refund'] = count($transaksisGagal);
+    $transaksisGagal =0;
+
+    //Hitung transaksi pending
+    $transaksisPending = $this->detailPesananModel->where('status','Pending')->findAll();
+    $data['total_pending'] = count($transaksisPending);
+    $transaksisPending =0;
+
     return view('produk/dashboard', $data);
 }
     
