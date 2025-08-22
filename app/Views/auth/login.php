@@ -18,40 +18,43 @@
             align-items: center;
             min-height: 100vh;
         }
+        /* CSS untuk loading spinner */
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 
 <body class="bg-gray-900">
     <div class="flex flex-col items-center p-8 bg-white dark:bg-gray-800 shadow-2xl rounded-2xl w-full max-w-md text-center relative border border-gray-200 dark:border-gray-700">
+    <!-- Link daftar -->
 
-        <!-- Tombol kembali -->
-        <!-- <a href="<?= base_url('/') ?>"
-            class="absolute top-4 left-4 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-        </a> -->
-
-        <!-- Judul -->
         <h1 class="text-3xl font-extrabold text-gray-800 dark:text-white mb-2 mt-6 tracking-tight">Login Toko Magang</h1>
         <p class="text-gray-500 dark:text-gray-400 mb-6 text-sm">Silakan masuk untuk melanjutkan</p>
 
-        <!-- Alert error -->
         <?php if (session()->getFlashdata('error')): ?>
             <div class="p-4 mb-6 text-sm text-red-800 rounded-lg bg-red-100 dark:bg-gray-700 dark:text-red-400 border border-red-300 dark:border-red-500 w-full text-left animate-pulse">
                 <?= session()->getFlashdata('error') ?>
             </div>
         <?php endif; ?>
-        <!-- Alert sukses -->
         <?php if (session()->getFlashdata('message')): ?>
             <div class="p-4 mb-6 text-sm text-green-800 rounded-lg bg-green-100 dark:bg-gray-700 dark:text-green-400 border border-green-300 dark:border-green-500 w-full text-left animate-pulse">
                 <?= session()->getFlashdata('message') ?>
             </div>
         <?php endif; ?>
+        
 
-        <!-- Form login -->
-        <form action="<?= base_url('auth/manual_login') ?>" method="post" class="w-full space-y-4 mb-6">
-            <!-- Username -->
+        <form id="loginForm" action="<?= base_url('auth/manual_login') ?>" method="post" class="w-full space-y-4 mb-6">
             <div class="relative">
                 <input type="text" name="username" placeholder="Username atau Email" required
                     class="w-full px-4 py-3 pl-11 border rounded-lg shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200">
@@ -63,7 +66,6 @@
                     </svg>
                 </span>
             </div>
-            <!-- Password -->
             <div class="relative">
                 <input type="password" name="password" placeholder="Password" required
                     class="w-full px-4 py-3 pl-11 border rounded-lg shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200">
@@ -75,21 +77,19 @@
                     </svg>
                 </span>
             </div>
-            <!-- Tombol login -->
-            <button type="submit"
-                class="w-full px-4 py-3 text-white font-semibold bg-blue-500 hover:bg-blue-600 transition-transform transform hover:scale-[1.02] duration-300 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
-                Login
+            <button type="submit" id="loginButton"
+                class="w-full px-4 py-3 text-white font-semibold bg-blue-500 hover:bg-blue-600 transition-transform transform hover:scale-[1.02] duration-300 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 flex items-center justify-center">
+                <span id="buttonText">Login</span>
+                <span id="loadingSpinner" class="loading-spinner ml-2 hidden"></span>
             </button>
         </form>
 
-        <!-- Divider -->
         <div class="flex items-center w-full mb-4">
             <div class="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
             <span class="px-3 text-gray-500 dark:text-gray-400 text-sm">atau</span>
             <div class="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
         </div>
 
-        <!-- Login Google -->
         <a href="<?= base_url('auth/google/login') ?>"
             class="inline-flex items-center justify-center w-full px-4 py-3 text-white font-semibold bg-red-500 hover:bg-red-600 transition-transform transform hover:scale-[1.02] duration-300 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2">
             <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
@@ -100,16 +100,13 @@
             </svg>
             Login dengan Google
         </a>
-
-        <!-- Link daftar -->
-        <!-- <p class="text-sm text-gray-500 dark:text-gray-400 mt-6">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-6">
             Belum punya akun?
             <a href="<?= base_url('auth/register') ?>"
                 class="text-blue-600 hover:underline dark:text-blue-400 font-medium">
                 Daftar sekarang
             </a>
-        </p> -->
-        <!-- Link daftar -->
+        </p>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-6">
             <a href="<?= base_url('pembeli') ?>"
                 class="text-blue-600 hover:underline dark:text-blue-400 font-medium">
@@ -119,6 +116,20 @@
 
     </div>
     <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            const loginButton = document.getElementById('loginButton');
+            const buttonText = document.getElementById('buttonText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // Sembunyikan teks dan tampilkan spinner
+            buttonText.classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+
+            // Nonaktifkan tombol untuk mencegah double-click
+            loginButton.disabled = true;
+        });
+    </script
 </body>
 
 </html>

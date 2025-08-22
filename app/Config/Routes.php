@@ -35,6 +35,7 @@ $routes->post('auth/manual_login', 'Auth::manualLogin');
 $routes->get('auth/google/login', 'Auth::googleLogin');
 $routes->get('auth/google/callback', 'Auth::googleCallback');
 $routes->get('logout', 'Auth::logout');
+$routes->get('auth/splash', 'Auth::showSplash');
 
 // Rute untuk Halaman Pembeli (pastikan tidak termasuk dalam grup admin)
 $routes->get('pembeli', 'PembeliController::index');

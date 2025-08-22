@@ -83,7 +83,7 @@ public function create()
             session()->set('user_name', $user['username']);
             session()->setFlashdata('message', 'Login berhasil!');
 
-            return redirect()->to(base_url('admin'));
+            return redirect()->to(base_url('auth/splash'));
         }
 
         // Ubah pesan error di sini
@@ -133,7 +133,7 @@ public function create()
                 session()->set('user_picture', $data->picture);
 
                 // Arahkan ke dashboard admin
-                return redirect()->to(base_url('admin'));
+                return redirect()->to(base_url('auth/splash'));
             }
             
             // Jika email tidak diizinkan, berikan pesan error
@@ -147,6 +147,11 @@ public function create()
     public function login()
     {
         return view('auth/login');
+    }
+    
+    public function showSplash()
+    {
+        return view('auth/splash');
     }
 
     public function logout()
