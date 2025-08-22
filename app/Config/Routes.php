@@ -7,6 +7,9 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 
+$routes->get('auth/register', 'Auth::register');
+$routes->post('auth/register/create', 'Auth::create');
+
 // Kelompokkan semua rute admin dan terapkan filter
 $routes->group('admin', ['filter' => 'auth_admin'], function ($routes) {
     // Rute untuk Halaman Admin (dashboard)
