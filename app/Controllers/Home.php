@@ -22,7 +22,7 @@ class Home extends BaseController
     // Metode index akan mengarahkan ke halaman landing
     public function index()
     {
-        return view('landing');
+        return view('auth/login');
     }
 
     public function admin()
@@ -56,6 +56,12 @@ class Home extends BaseController
     $transaksisPending = $this->detailPesananModel->where('status','Pending')->findAll();
     $data['total_pending'] = count($transaksisPending);
     $transaksisPending =0;
+
+    // Ambil 5 produk terbaru
+    $data['latest_products'] = $this->produkModel->orderBy('id_produk', 'DESC')->findAll(5);
+    
+    // Ambil 3 transaksi terbaru
+    $data['latest_transactions'] = $this->detailPesananModel->orderBy('id_detail', 'DESC')->findAll(5);
 
     return view('produk/dashboard', $data);
 }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Admin</title>
+    <title>Login</title>
     <link href="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.css" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -13,7 +13,6 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #1a202c;
-            /* Warna latar belakang gelap */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -23,28 +22,29 @@
 </head>
 
 <body class="bg-gray-900">
-    <div class="flex flex-col items-center p-8 bg-white dark:bg-gray-800 shadow-2xl rounded-2xl w-full max-w-md text-center relative">
+    <div class="flex flex-col items-center p-8 bg-white dark:bg-gray-800 shadow-2xl rounded-2xl w-full max-w-md text-center relative border border-gray-200 dark:border-gray-700">
 
         <!-- Tombol kembali -->
-        <a href="<?= base_url('/') ?>"
+        <!-- <a href="<?= base_url('/') ?>"
             class="absolute top-4 left-4 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
             </svg>
-        </a>
+        </a> -->
 
         <!-- Judul -->
-        <h1 class="text-3xl font-extrabold text-gray-800 dark:text-white mb-6 mt-6">Login Admin</h1>
+        <h1 class="text-3xl font-extrabold text-gray-800 dark:text-white mb-2 mt-6 tracking-tight">Login Toko Magang</h1>
+        <p class="text-gray-500 dark:text-gray-400 mb-6 text-sm">Silakan masuk untuk melanjutkan</p>
 
         <!-- Alert error -->
         <?php if (session()->getFlashdata('error')): ?>
-            <div class="p-4 mb-6 text-sm text-red-800 rounded-lg bg-red-100 dark:bg-gray-700 dark:text-red-400 border border-red-300 dark:border-red-500 w-full text-left">
+            <div class="p-4 mb-6 text-sm text-red-800 rounded-lg bg-red-100 dark:bg-gray-700 dark:text-red-400 border border-red-300 dark:border-red-500 w-full text-left animate-pulse">
                 <?= session()->getFlashdata('error') ?>
             </div>
         <?php endif; ?>
         <!-- Alert sukses -->
         <?php if (session()->getFlashdata('message')): ?>
-            <div class="p-4 mb-6 text-sm text-green-800 rounded-lg bg-green-100 dark:bg-gray-700 dark:text-green-400 border border-green-300 dark:border-green-500 w-full text-left">
+            <div class="p-4 mb-6 text-sm text-green-800 rounded-lg bg-green-100 dark:bg-gray-700 dark:text-green-400 border border-green-300 dark:border-green-500 w-full text-left animate-pulse">
                 <?= session()->getFlashdata('message') ?>
             </div>
         <?php endif; ?>
@@ -54,7 +54,7 @@
             <!-- Username -->
             <div class="relative">
                 <input type="text" name="username" placeholder="Username atau Email" required
-                    class="w-full px-4 py-3 pl-10 border rounded-lg shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    class="w-full px-4 py-3 pl-11 border rounded-lg shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200">
                 <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
                         viewBox="0 0 24 24">
@@ -66,7 +66,7 @@
             <!-- Password -->
             <div class="relative">
                 <input type="password" name="password" placeholder="Password" required
-                    class="w-full px-4 py-3 pl-10 border rounded-lg shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    class="w-full px-4 py-3 pl-11 border rounded-lg shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200">
                 <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
                         viewBox="0 0 24 24">
@@ -77,17 +77,21 @@
             </div>
             <!-- Tombol login -->
             <button type="submit"
-                class="w-full px-4 py-3 text-white font-semibold bg-blue-500 hover:bg-blue-600 transition-all duration-300 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
+                class="w-full px-4 py-3 text-white font-semibold bg-blue-500 hover:bg-blue-600 transition-transform transform hover:scale-[1.02] duration-300 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
                 Login
             </button>
         </form>
 
         <!-- Divider -->
-        <p class="mb-4 text-gray-500 dark:text-gray-400">atau</p>
+        <div class="flex items-center w-full mb-4">
+            <div class="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+            <span class="px-3 text-gray-500 dark:text-gray-400 text-sm">atau</span>
+            <div class="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+        </div>
 
         <!-- Login Google -->
         <a href="<?= base_url('auth/google/login') ?>"
-            class="inline-flex items-center justify-center w-full px-4 py-3 text-white font-semibold bg-red-500 hover:bg-red-600 transition-all duration-300 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2">
+            class="inline-flex items-center justify-center w-full px-4 py-3 text-white font-semibold bg-red-500 hover:bg-red-600 transition-transform transform hover:scale-[1.02] duration-300 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2">
             <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M22.5 12.1c0-.8-.1-1.6-.3-2.4H12v4.5h6.4c-.2 1.5-.9 2.8-2.1 3.7l3.9 3c2.3-2.1 3.6-5.2 3.6-8.8z" fill="#4285F4" />
                 <path d="M12 24c3.2 0 5.8-1.1 7.7-3l-3.9-3c-1.1.7-2.6 1.1-3.8 1.1-2.9 0-5.3-2-6.2-4.7L3.1 18.6c1.8 3.5 5.4 5.4 8.9 5.4z" fill="#34A853" />
@@ -98,11 +102,18 @@
         </a>
 
         <!-- Link daftar -->
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-6">
+        <!-- <p class="text-sm text-gray-500 dark:text-gray-400 mt-6">
             Belum punya akun?
             <a href="<?= base_url('auth/register') ?>"
                 class="text-blue-600 hover:underline dark:text-blue-400 font-medium">
                 Daftar sekarang
+            </a>
+        </p> -->
+        <!-- Link daftar -->
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-6">
+            <a href="<?= base_url('pembeli') ?>"
+                class="text-blue-600 hover:underline dark:text-blue-400 font-medium">
+                Masuk sebagai pembeli
             </a>
         </p>
 
