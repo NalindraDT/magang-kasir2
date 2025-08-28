@@ -50,7 +50,6 @@ class PembeliController extends BaseController
             session()->set('id_pesanan', $id_pesanan);
         }
 
-        $total_bayar_pesanan = 0;
         foreach ($item_dipilih as $id_produk => $kuantitas) {
             $produk = $this->produkModel->find($id_produk);
 
@@ -85,8 +84,6 @@ class PembeliController extends BaseController
                 $new_stok = $produk['stok'] - $kuantitas;
                 $this->produkModel->update($id_produk, ['stok' => $new_stok]);
 
-                $total_bayar_pesanan += $kuantitas * $produk['harga'];
-
             } else {
                 session()->setFlashdata('error', 'Pembelian gagal. Stok produk ' . $produk['nama_produk'] . ' tidak mencukupi atau data tidak valid.');
                 return redirect()->to(base_url('pembeli'));
@@ -95,6 +92,10 @@ class PembeliController extends BaseController
         
         $total_bayar_sekarang = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status !=', 'Refund')->selectSum('total_harga')->first()['total_harga'] ?? 0;
         $this->pesananModel->update($id_pesanan, ['total_bayar' => $total_bayar_sekarang]);
+        
+        // Simpan total_bayar ke session agar bisa diakses di DokuController
+        session()->set('total_bayar_pesanan', $total_bayar_sekarang);
+        
         session()->setFlashdata('message', 'Pembelian berhasil!');
         return redirect()->to(base_url('pembeli'));
     }
@@ -122,6 +123,9 @@ class PembeliController extends BaseController
         $total_bayar_sekarang = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status !=', 'Refund')->selectSum('total_harga')->first()['total_harga'] ?? 0;
         $this->pesananModel->update($id_pesanan, ['total_bayar' => $total_bayar_sekarang]);
 
+        // Simpan total_bayar yang baru ke session
+        session()->set('total_bayar_pesanan', $total_bayar_sekarang);
+
         session()->setFlashdata('message', 'Produk berhasil di refund');
         return redirect()->to(base_url('pembeli'));
     }
@@ -145,6 +149,7 @@ class PembeliController extends BaseController
 
         // Kosongkan session id_pesanan setelah dicetak
         session()->remove('id_pesanan');
+        session()->remove('total_bayar_pesanan');
 
         return view('pembeli/nota', $data);
     }
@@ -187,6 +192,14 @@ class PembeliController extends BaseController
 
         // Perbarui stok di tabel produk
         $this->produkModel->update($produk['id_produk'], ['stok' => ($stokProdukSaatIni - $selisihKuantitas)]);
+        
+        // Perbarui total bayar di tabel pesanan setelah item di-update
+        $id_pesanan = $itemLama['id_pesanan'];
+        $total_bayar_sekarang = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status !=', 'Refund')->selectSum('total_harga')->first()['total_harga'] ?? 0;
+        $this->pesananModel->update($id_pesanan, ['total_bayar' => $total_bayar_sekarang]);
+
+        // Simpan total_bayar yang baru ke session
+        session()->set('total_bayar_pesanan', $total_bayar_sekarang);
 
         session()->setFlashdata('message', 'Keranjang berhasil diupdate!');
         return redirect()->to(base_url('pembeli'));
