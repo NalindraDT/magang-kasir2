@@ -48,7 +48,7 @@
         <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
-                    <th scope="col" class="px-6 py-3">No Pesanan</th>
+                    <th scope="col" class="px-6 py-3">ID Pesanan</th>
                     <th scope="col" class="px-6 py-3">Nama Produk</th>
                     <th scope="col" class="px-6 py-3">Kuantitas</th>
                     <th scope="col" class="px-6 py-3">Harga Satuan</th>
@@ -98,12 +98,11 @@
         </table>
     </div>
 
-    <!-- Tombol Cetak Nota -->
     <?php if (!empty($keranjang)): ?>
         <div class="mt-6 text-right">
-            <button onclick="cetakNota()" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
-                Cetak Nota
-            </button>
+            <a href="<?= base_url('pembeli/checkout') ?>" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+                Bayar dengan DOKU
+            </a>
         </div>
     <?php endif; ?>
 </main>

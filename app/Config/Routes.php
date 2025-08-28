@@ -48,3 +48,6 @@ $routes->post('pembeli/updateCart/(:num)', 'PembeliController::updateCart/$1');
 $routes->group('api', function ($routes) {
     $routes->resource('produk', ['controller' => 'ProdukController']);
 });
+
+$routes->get('pembeli/checkout', 'DokuController::payment');
+$routes->post('doku/callback', 'DokuController::callback');
