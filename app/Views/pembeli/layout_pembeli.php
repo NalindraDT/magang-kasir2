@@ -28,11 +28,6 @@
                     </a>
                 </div>
                 <div class="hidden md:block">
-                    <a href="#" class="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md px-3 py-2 text-sm font-medium">
-                        Keranjang (<?= isset($jumlah_keranjang) ? $jumlah_keranjang : 0 ?>)
-                    </a>
-                </div>
-                <div class="hidden md:block">
                     <a href="https://sandbox.doku.com/bo/simulator-payment"
                         class="text-blue-500 hover:text-blue-600 hover:underline font-medium transition-colors duration-300 ">
                         Laman Simulator

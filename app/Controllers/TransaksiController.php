@@ -24,37 +24,30 @@ class TransaksiController extends BaseController
         $data['transaksis'] = $this->detailPesananModel->findAll();
         return view('transaksi/index', $data);
     }
-    
-    // public function refund($id_pesanan)
-    // {
-    //     $items = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->findAll();
 
-    //     if (empty($items)) {
-    //         session()->setFlashdata('error', 'Transaksi tidak ditemukan.');
-    //         return redirect()->to(base_url('transaksi'));
-    //     }
+    // Metode baru untuk cetak nota dari halaman admin
+    public function cetak($id_pesanan)
+    {
+        if (empty($id_pesanan)) {
+            return redirect()->back()->with('error', 'ID Pesanan tidak valid.');
+        }
 
-    //     foreach ($items as $item) {
-    //         // Perbarui status menjadi "Refund"
-    //         $this->detailPesananModel->update($item['id_detail'], ['status' => 'Refund']);
-            
-    //         // Kembalikan stok produk
-    //         $produk = $this->produkModel->find($item['id_produk']);
-    //         if ($produk) {
-    //             $new_stok = $produk['stok'] + $item['kuantitas'];
-    //             $this->produkModel->update($produk['id_produk'], ['stok' => $new_stok]);
-    //         }
-    //     }
-        
-    //     session()->setFlashdata('message', 'Transaksi berhasil di-refund!');
-    //     return redirect()->to(base_url('transaksi'));
-    // }
-    
+        $data['pesanan'] = $this->pesananModel->find($id_pesanan);
+        $data['detail_pesanan'] = $this->detailPesananModel
+            ->where('id_pesanan', $id_pesanan)
+            ->where('status !=', 'Refund')
+            ->findAll();
+
+        if (empty($data['pesanan']) || empty($data['detail_pesanan'])) {
+            return redirect()->back()->with('error', 'Data transaksi tidak ditemukan.');
+        }
+
+        return view('pembeli/nota', $data);
+    }
+
     public function hapus($id_detail)
     {
         $this->detailPesananModel->where('id_detail', $id_detail)->delete();
-        // $this->pesananModel->delete($id_pesanan);
-
         $page = $this->request->getGet('page') ?? 1;
 
         session()->setFlashdata('message', 'Transaksi berhasil dihapus!');

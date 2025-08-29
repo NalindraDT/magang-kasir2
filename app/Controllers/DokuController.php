@@ -47,6 +47,7 @@ class DokuController extends BaseController
 
     public function payment()
     {
+        
         $total_bayar = session()->get('total_bayar_pesanan');
         $id_pesanan = session()->get('id_pesanan');
         $trxId = 'INV-' . $id_pesanan . '-' . date('YmdHis');

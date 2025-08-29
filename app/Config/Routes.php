@@ -27,6 +27,7 @@ $routes->group('admin', ['filter' => 'auth_admin'], function ($routes) {
     $routes->get('transaksi', 'TransaksiController::index');
     $routes->get('transaksi/refund/(:num)', 'TransaksiController::refund/$1');
     $routes->get('transaksi/hapus/(:num)', 'TransaksiController::hapus/$1');
+    $routes->get('transaksi/cetak/(:num)', 'TransaksiController::cetak/$1');
 });
 
 // Pindahkan rute login dan logout keluar dari grup admin

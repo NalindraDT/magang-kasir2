@@ -36,7 +36,7 @@
         </div>
 
         <button type="submit" class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-            Beli Semua Produk Dipilih
+            Masukkan produk ke keranjang
         </button>
     </form>
 
@@ -120,7 +120,7 @@
         .then(data => {
             if (data.status === 'success') {
                 alert('Pembayaran VA berhasil dibuat. Nomor Virtual Account Anda: ' + data.virtualAccountNo);
-                
+                window.open("https://sandbox.doku.com/bo/simulator-payment", "_blank");
                 // Tambahkan baris ini untuk memuat ulang halaman secara otomatis
                 window.location.reload(); 
 
