@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,12 +9,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
     </style>
 </head>
+
 <body class="bg-gray-100 dark:bg-gray-900">
     <!-- Navbar sederhana untuk pembeli -->
     <nav class="bg-white dark:bg-gray-800 shadow-md">
@@ -29,10 +32,16 @@
                         Keranjang (<?= isset($jumlah_keranjang) ? $jumlah_keranjang : 0 ?>)
                     </a>
                 </div>
+                <div class="hidden md:block">
+                    <a href="https://sandbox.doku.com/bo/simulator-payment"
+                        class="text-blue-500 hover:text-blue-600 hover:underline font-medium transition-colors duration-300 ">
+                        Laman Simulator
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
-    
+
     <!-- Konten Utama -->
     <div class="p-4">
         <?= $this->renderSection('content') ?>
@@ -41,4 +50,5 @@
     <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
     <?= $this->renderSection('scripts') ?>
 </body>
+
 </html>

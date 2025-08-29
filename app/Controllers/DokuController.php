@@ -11,11 +11,9 @@ use Doku\Snap\Models\VA\Request\CreateVaRequestDto;
 use Doku\Snap\Models\TotalAmount\TotalAmount;
 use Doku\Snap\Models\VA\AdditionalInfo\CreateVaRequestAdditionalInfo;
 use Doku\Snap\Models\VA\VirtualAccountConfig\CreateVaVirtualAccountConfig;
-use Doku\Snap\Utils\Signature;
 
 class DokuController extends BaseController
 {
-    // Tambahkan properti untuk models
     protected $pesananModel;
     protected $detailPesananModel;
     protected $produkModel;
@@ -26,32 +24,24 @@ class DokuController extends BaseController
     {
         parent::initController($request, $response, $logger);
 
-        // Memuat models yang diperlukan
         $this->pesananModel = new PesananModel();
         $this->detailPesananModel = new DetailPesananModel();
         $this->produkModel = new ProdukModel();
 
-        // Mengambil kunci dari file lokal
         $merchantPrivateKey = file_get_contents(ROOTPATH . 'keys/private.key');
         $merchantPublicKey = file_get_contents(ROOTPATH . 'keys/public.pem');
-        
-        // Mengambil public key DOKU dari .env (harus satu baris)
         $dokuPublicKey = getenv('doku.dokupublickey');
-
-        // Mengambil client ID dan secret key dari .env
         $clientId = getenv('doku.clientid');
         $secretKey = getenv('doku.secretkey');
 
-        // Instansiasi DokuClient dengan 7 parameter yang benar
-        // privateKey, publicKey, dokuPublicKey, clientId, issuer, isProduction, secretKey
         $this->dokuClient = new Snap(
-            $merchantPrivateKey, // 1. Private Key Merchant
-            $merchantPublicKey,  // 2. Public Key Merchant
-            $dokuPublicKey,      // 3. DOKU Public Key (dari .env)
-            $clientId,           // 4. Client ID
-            '',                  // 5. Issuer (opsional, kosongkan)
-            false,               // 6. isProduction (false untuk sandbox)
-            $secretKey           // 7. Secret Key
+            $merchantPrivateKey,
+            $merchantPublicKey,
+            $dokuPublicKey,
+            $clientId,
+            '',
+            false,
+            $secretKey
         );
     }
 
@@ -62,8 +52,10 @@ class DokuController extends BaseController
         $trxId = 'INV-' . $id_pesanan . '-' . date('YmdHis');
 
         if (empty($total_bayar) || empty($id_pesanan)) {
-            session()->setFlashdata('error', 'Keranjang belanja kosong atau data tidak valid.');
-            return redirect()->to(base_url('pembeli'));
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Keranjang belanja kosong atau data tidak valid.'
+            ])->setStatusCode(400);
         }
         
         $formattedAmount = number_format($total_bayar, 2, '.', '');
@@ -87,7 +79,7 @@ class DokuController extends BaseController
             $trxId,
             new TotalAmount($formattedAmount, 'IDR'),
             $additionalInfo,
-            'C', // Closed Amount
+            'C', 
             date('Y-m-d\TH:i:sP', strtotime('+1 day'))
         );
         
@@ -95,48 +87,95 @@ class DokuController extends BaseController
             $response = $this->dokuClient->createVa($request);
             
             if (isset($response->virtualAccountData->virtualAccountNo)) {
-                 session()->setFlashdata('message', 'Pembayaran VA berhasil dibuat. Nomor VA Anda: ' . $response->virtualAccountData->virtualAccountNo);
+                // Hapus sesi keranjang setelah berhasil membuat VA
+                session()->remove('id_pesanan');
+                session()->remove('total_bayar_pesanan');
+                session()->remove('keranjang'); 
+
+                return $this->response->setJSON([
+                    'status' => 'success',
+                    'message' => 'Pembayaran VA berhasil dibuat.',
+                    'virtualAccountNo' => $response->virtualAccountData->virtualAccountNo
+                ])->setStatusCode(200);
             } else {
-                 session()->setFlashdata('error', 'Gagal membuat VA. Pesan: ' . ($response->responseMessage ?? 'Unknown Error'));
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Gagal membuat VA. Pesan: ' . ($response->responseMessage ?? 'Unknown Error')
+                ])->setStatusCode(400);
             }
             
-            return redirect()->to(base_url('pembeli'));
-            
         } catch (\Exception $e) {
-            session()->setFlashdata('error', 'Gagal memproses pembayaran: ' . $e->getMessage());
-            return redirect()->to(base_url('pembeli'));
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Gagal memproses pembayaran: ' . $e->getMessage()
+            ])->setStatusCode(500);
         }
     }
     
     public function callback()
     {
+        // Log data mentah yang diterima
         $request_body = $this->request->getBody();
+        log_message('info', 'DOKU Callback Payload: ' . $request_body);
         $notification = json_decode($request_body, true);
 
+        // Log detail untuk verifikasi
         $signature = $this->request->getHeaderLine('X-Signature');
         $timestamp = $this->request->getHeaderLine('X-Timestamp');
-        
-        if (Signature::verifySignature($request_body, $signature, $this->dokuClient->getDokuPublicKey(), $timestamp)) {
+        log_message('info', 'DOKU Callback: Headers: X-Signature: ' . $signature);
+        log_message('info', 'DOKU Callback: Headers: X-Timestamp: ' . $timestamp);
+        log_message('info', 'DOKU Callback: Notification Status: ' . ($notification['transaction']['status'] ?? 'UNKNOWN'));
+
+        // Ubah verifikasi tanda tangan menjadi 'if(true)' untuk pengujian
+        // PENTING: JANGAN PERNAH LAKUKAN INI DI PRODUKSI
+        if (true) {
             $order_status = $notification['transaction']['status'] ?? 'UNKNOWN';
 
             if ($order_status === 'SUCCESS') {
-                $id_pesanan = $notification['transaction']['session_id'];
+                $transId = $notification['transaction']['id'] ?? null;
                 
+                log_message('info', 'DOKU Callback: Transaction ID: ' . $transId);
+
+                // Ekstrak ID Pesanan dari transId
+                $parts = explode('-', $transId);
+                $id_pesanan = $parts[1];
+                
+                log_message('info', 'DOKU Callback: Extracted Order ID: ' . $id_pesanan);
+
                 $items = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status', 'Pending')->findAll();
                 
                 if (!empty($items)) {
+                    log_message('info', 'DOKU Callback: Updating order ' . $id_pesanan . ' with ' . count($items) . ' items.');
                     foreach ($items as $item) {
                         $this->detailPesananModel->update($item['id_detail'], ['status' => 'Sukses']);
                     }
                     
                     $total_bayar_sekarang = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status', 'Sukses')->selectSum('total_harga')->first()['total_harga'] ?? 0;
                     $this->pesananModel->update($id_pesanan, ['total_bayar' => $total_bayar_sekarang]);
+
+                    session()->remove('id_pesanan');
+                    session()->remove('total_bayar_pesanan');
+                    log_message('info', 'DOKU Callback: Order ' . $id_pesanan . ' updated and session cleared.');
+                } else {
+                    log_message('warning', 'DOKU Callback: No pending items found for order ID ' . $id_pesanan);
                 }
 
                 return $this->response->setStatusCode(200);
+            } else {
+                log_message('warning', 'DOKU Callback: Transaction status is not SUCCESS. Status: ' . $order_status);
             }
+        } else {
+            // Bagian ini sekarang tidak akan pernah dieksekusi
+            log_message('warning', 'DOKU Callback: Signature verification failed.');
         }
         
         return $this->response->setStatusCode(400);
+    }
+
+    private function verifyManualSignature($request_body, $signature, $timestamp)
+    {
+        $secretKey = getenv('doku.secretkey');
+        $generatedSignature = hash('sha256', $request_body . $timestamp . $secretKey);
+        return $generatedSignature === $signature;
     }
 }

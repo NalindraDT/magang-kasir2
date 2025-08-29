@@ -49,5 +49,6 @@ $routes->group('api', function ($routes) {
     $routes->resource('produk', ['controller' => 'ProdukController']);
 });
 
-$routes->get('pembeli/checkout', 'DokuController::payment');
+// Rute pembayaran DOKU yang benar
+$routes->post('doku/payment', 'DokuController::payment');
 $routes->post('doku/callback', 'DokuController::callback');

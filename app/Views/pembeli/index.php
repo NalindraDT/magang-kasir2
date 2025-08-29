@@ -100,9 +100,10 @@
 
     <?php if (!empty($keranjang)): ?>
         <div class="mt-6 text-right">
-            <a href="<?= base_url('pembeli/checkout') ?>" id="checkout-button" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+            <!-- Ganti a href dengan button type="button" -->
+            <button type="button" id="checkout-button" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
                 Bayar dengan DOKU
-            </a>
+            </button>
         </div>
     <?php endif; ?>
 </main>
@@ -118,7 +119,11 @@
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                loadJokulCheckout(data.url);
+                alert('Pembayaran VA berhasil dibuat. Nomor Virtual Account Anda: ' + data.virtualAccountNo);
+                
+                // Tambahkan baris ini untuk memuat ulang halaman secara otomatis
+                window.location.reload(); 
+
             } else {
                 const errorMessage = document.createElement('div');
                 errorMessage.className = 'p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400';
@@ -134,50 +139,5 @@
             document.querySelector('main').prepend(errorMessage);
         });
     });
-
-    var cssJokul = document.createElement('link');
-    cssJokul.setAttribute('rel', 'stylesheet');
-    cssJokul.setAttribute('href', 'https://sandbox.doku.com/jokul-checkout-js/v1/jokul-checkout-1.0.0.css');
-    document.head.appendChild(cssJokul);
-    
-    function loadJokulCheckout(url) {
-        var token = url + "?view=iframe";
-        var jokulCheckoutModal = document.createElement("div");
-        jokulCheckoutModal.setAttribute('class', 'jokul-modal');
-        jokulCheckoutModal.setAttribute('id', 'jokul_checkout_modal');
-        jokulCheckoutModal.innerHTML = '<div class="jokul-content">\n <iframe src="' + token + '"></iframe>\n </div>';
-        document.body.appendChild(jokulCheckoutModal);
-        document.getElementById("jokul_checkout_modal").style.display = "block";
-    }
-
-    window.onclick = function (event) {
-        var modal = document.getElementById("jokul_checkout_modal");
-        if (event.target == modal) {
-            modal.style.display = "block";
-        }
-    }
-    
-    function closeJokul() {
-        document.getElementById("jokul_checkout_modal").style.display = "none";
-    }
-    
-    if (window.addEventListener) {
-        window.addEventListener("message", receive, false);
-    } else {
-        if (window.attachEvent) {
-            window.attachEvent("onmessage", receive, false);
-        }
-    }
-    
-    function receive(event) {
-        var data = event.data;
-        if (typeof (window[data.func]) == "function") {
-            window[data.func].call(null, data);
-        }
-    }
-    
-    function alertMyMessage(msg) {
-        alert(msg);
-    }
 </script>
 <?= $this->endSection() ?>

@@ -12,11 +12,10 @@ class Auth extends BaseController
     protected $userModel;
     public function __construct()
     {
-        $this->userModel = new UserModel(); // Tambahkan ini
+        $this->userModel = new UserModel();
     }
     public function register()
 {
-    // Cek jika user sudah login, redirect ke dashboard
     if (session()->get('user_logged_in')) {
         return redirect()->to(base_url('admin'));
     }
@@ -25,7 +24,6 @@ class Auth extends BaseController
 
 public function create()
 {
-    // Validasi data input
     $rules = [
         'username' => 'required|alpha_numeric_space|min_length[3]|max_length[30]|is_unique[users.username]',
         'email'    => 'required|valid_email|is_unique[users.email]',
@@ -33,7 +31,6 @@ public function create()
         'pass_confirm' => 'required|matches[password]',
     ];
 
-    // Validasi reCAPTCHA
     $recaptcha_response = $this->request->getPost('g-recaptcha-response');
     $secretKey = getenv('recaptcha.secretkey');
     $verifyUrl = 'https://www.google.com/recaptcha/api/siteverify';
@@ -47,7 +44,6 @@ public function create()
     $result = json_decode($response->getBody());
 
     if (!$this->validate($rules) || !$result->success) {
-        // Jika validasi gagal, kembalikan ke form
         $errors = $this->validator->getErrors();
         if (!$result->success) {
             $errors['recaptcha'] = 'Verifikasi captcha gagal. Silakan coba lagi.';
@@ -56,7 +52,6 @@ public function create()
         return redirect()->back()->withInput();
     }
 
-    // Jika semua validasi berhasil, simpan pengguna baru
     $data = [
         'username' => $this->request->getPost('username'),
         'email'    => $this->request->getPost('email'),
@@ -86,7 +81,6 @@ public function create()
             return redirect()->to(base_url('auth/splash'));
         }
 
-        // Ubah pesan error di sini
         session()->setFlashdata('error', 'Password atau username salah, silahkan coba lagi');
         return redirect()->back()->withInput();
     }
@@ -121,22 +115,18 @@ public function create()
             $google_service = new Oauth2($client);
             $data = $google_service->userinfo->get();
 
-            // Ambil daftar email yang diizinkan dari .env
             $allowedEmails = explode(',', getenv('google.allowedEmails'));
             
-            // Cek apakah email pengguna ada di daftar yang diizinkan
             if (in_array($data->email, $allowedEmails)) {
-                // Jika email diizinkan, simpan data ke session
                 session()->set('user_logged_in', true);
                 session()->set('user_email', $data->email);
                 session()->set('user_name', $data->name);
                 session()->set('user_picture', $data->picture);
 
-                // Arahkan ke dashboard admin
+                // Arahkan ke splash screen, seperti pada login manual
                 return redirect()->to(base_url('auth/splash'));
             }
             
-            // Jika email tidak diizinkan, berikan pesan error
             session()->setFlashdata('error', 'Email Anda tidak memiliki izin untuk mengakses halaman ini.');
             return redirect()->to(base_url('auth/login'));
         }
