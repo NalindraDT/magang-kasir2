@@ -33,7 +33,7 @@ class PembeliController extends BaseController
     public function beli()
     {
         $kuantitas_request = $this->request->getPost('kuantitas');
-        $item_dipilih = array_filter($kuantitas_request, function($kuantitas) {
+        $item_dipilih = array_filter($kuantitas_request, function ($kuantitas) {
             return $kuantitas > 0;
         });
 
@@ -59,7 +59,7 @@ class PembeliController extends BaseController
                     ->where('id_produk', $id_produk)
                     ->where('status !=', 'Refund')
                     ->first();
-                
+
                 if ($existing_item) {
                     $new_kuantitas = $existing_item['kuantitas'] + $kuantitas;
                     $total_harga_item = $new_kuantitas * $produk['harga'];
@@ -80,22 +80,21 @@ class PembeliController extends BaseController
                     ];
                     $this->detailPesananModel->save($data_detail);
                 }
-                
+
                 $new_stok = $produk['stok'] - $kuantitas;
                 $this->produkModel->update($id_produk, ['stok' => $new_stok]);
-
             } else {
                 session()->setFlashdata('error', 'Pembelian gagal. Stok produk ' . $produk['nama_produk'] . ' tidak mencukupi atau data tidak valid.');
                 return redirect()->to(base_url('pembeli'));
             }
         }
-        
+
         $total_bayar_sekarang = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status !=', 'Refund')->selectSum('total_harga')->first()['total_harga'] ?? 0;
         $this->pesananModel->update($id_pesanan, ['total_bayar' => $total_bayar_sekarang]);
-        
+
         // Simpan total_bayar ke session agar bisa diakses di DokuController
         session()->set('total_bayar_pesanan', $total_bayar_sekarang);
-        
+
         session()->setFlashdata('message', 'Pembelian berhasil!');
         return redirect()->to(base_url('pembeli'));
     }
@@ -117,7 +116,7 @@ class PembeliController extends BaseController
             $new_stok = $produk['stok'] + $item['kuantitas'];
             $this->produkModel->update($produk['id_produk'], ['stok' => $new_stok]);
         }
-        
+
         // Perbarui total bayar di tabel pesanan setelah item di-refund
         $id_pesanan = $item['id_pesanan'];
         $total_bayar_sekarang = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status !=', 'Refund')->selectSum('total_harga')->first()['total_harga'] ?? 0;
@@ -143,7 +142,7 @@ class PembeliController extends BaseController
             ->where('id_pesanan', $id_pesanan)
             ->where('status !=', 'Refund')
             ->findAll();
-        
+
         // Perbaikan: Hanya perbarui status item yang masih "Pending"
         $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status', 'Pending')->set(['status' => 'Sukses'])->update();
 
@@ -153,7 +152,7 @@ class PembeliController extends BaseController
 
         return view('pembeli/nota', $data);
     }
-    
+
     public function updateCart($id_detail)
     {
         $newKuantitas = $this->request->getPost('kuantitas');
@@ -192,7 +191,7 @@ class PembeliController extends BaseController
 
         // Perbarui stok di tabel produk
         $this->produkModel->update($produk['id_produk'], ['stok' => ($stokProdukSaatIni - $selisihKuantitas)]);
-        
+
         // Perbarui total bayar di tabel pesanan setelah item di-update
         $id_pesanan = $itemLama['id_pesanan'];
         $total_bayar_sekarang = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status !=', 'Refund')->selectSum('total_harga')->first()['total_harga'] ?? 0;
@@ -203,5 +202,42 @@ class PembeliController extends BaseController
 
         session()->setFlashdata('message', 'Keranjang berhasil diupdate!');
         return redirect()->to(base_url('pembeli'));
+    }
+    public function status()
+    {
+        // Ambil invoice number dari sesi untuk ditampilkan
+        $data['invoiceNumber'] = session()->get('current_invoice');
+
+        // Hapus sesi setelah digunakan
+        session()->remove('id_pesanan');
+        session()->remove('current_invoice');
+
+        // Tampilkan view konfirmasi
+        return view('pembeli/status', $data);
+    }
+    public function check_status($invoiceNumber = null)
+    {
+        // Pastikan hanya request AJAX yang bisa mengakses ini
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        if (!$invoiceNumber) {
+            return $this->response->setJSON(['status' => 'Error', 'message' => 'Invoice tidak valid.']);
+        }
+
+        $parts = explode('-', $invoiceNumber);
+        if (count($parts) < 2 || !is_numeric($parts[1])) {
+            return $this->response->setJSON(['status' => 'Error', 'message' => 'Format invoice salah.']);
+        }
+        $id_pesanan = $parts[1];
+
+        $order = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->first();
+
+        if ($order) {
+            return $this->response->setJSON(['status' => $order['status']]);
+        }
+
+        return $this->response->setJSON(['status' => 'Tidak Ditemukan']);
     }
 }

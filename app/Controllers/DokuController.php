@@ -5,6 +5,7 @@ namespace App\Controllers;
 use CodeIgniter\Controller;
 use DateTime;
 use DateTimeZone;
+use Google\Service\Webmasters\Resource\Sites;
 
 class DokuController extends BaseController
 {
@@ -15,7 +16,7 @@ class DokuController extends BaseController
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
-        
+
         $this->clientId = getenv('doku.clientid');
         $this->secretKey = getenv('doku.secretkey');
     }
@@ -34,7 +35,7 @@ class DokuController extends BaseController
         if (empty($items_in_cart) || empty($id_pesanan)) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Keranjang kosong.'])->setStatusCode(400);
         }
-        
+
         $invoiceNumber = 'INV-' . $id_pesanan . '-' . substr(str_replace('.', '', uniqid('', true)), -6);
 
         $line_items = [];
@@ -42,7 +43,7 @@ class DokuController extends BaseController
         foreach ($items_in_cart as $item) {
             $item_price = (int)$item['harga_satuan'];
             $item_quantity = (int)$item['kuantitas'];
-            
+
             $line_items[] = [
                 'name'     => $item['nama_produk'],
                 'price'    => $item_price,
@@ -57,7 +58,7 @@ class DokuController extends BaseController
                 'amount'         => $calculated_amount,
                 'line_items'     => $line_items,
                 'currency'       => 'IDR',
-                'callback_url'   => base_url('pembeli'),
+                'callback_url'   => base_url('pembeli/status/'),
                 'auto_redirect'  => true,
             ],
             'payment' => [
@@ -72,6 +73,7 @@ class DokuController extends BaseController
                     "EMONEY_SHOPEEPAY",
                     "EMONEY_OVO",
                     "EMONEY_DANA",
+                    "EMONEY_SHOPEEPAY",
                     "CREDIT_CARD"
                 ]
             ],
@@ -91,11 +93,11 @@ class DokuController extends BaseController
                 'country_code' => 'IDN'
             ]
         ];
-        
+
         $requestId = 'req-' . uniqid();
         $timestamp = $this->getTimestamp();
         $endpoint = '/checkout/v1/payment';
-        
+
         $signature = $this->createSignature('POST', $endpoint, $requestBody, $timestamp, $requestId);
 
         $client = \Config\Services::curlrequest();
@@ -131,7 +133,6 @@ class DokuController extends BaseController
                 }
                 return $this->response->setJSON(['status' => 'error', 'message' => $errorMessage])->setStatusCode(400);
             }
-
         } catch (\Exception $e) {
             log_message('error', 'DOKU Exception: ' . $e->getMessage());
             return $this->response->setJSON(['status' => 'error', 'message' => $e->getMessage()])->setStatusCode(500);
@@ -154,7 +155,7 @@ class DokuController extends BaseController
             log_message('info', 'DOKU Signature Header: ' . $signature);
 
             // Ganti endpoint target untuk validasi signature callback
-            $endpointTarget = '/doku/callback'; 
+            $endpointTarget = '/doku/callback';
             if (!$this->verifySignature($signature, $clientId, $requestId, $requestTimestamp, $requestBody, $endpointTarget)) {
                 log_message('error', 'DOKU Callback Signature Mismatch.');
                 return $this->response->setStatusCode(401, 'Unauthorized');
@@ -175,14 +176,13 @@ class DokuController extends BaseController
             $id_pesanan = $parts[1];
 
             $detailPesananModel = model('DetailPesananModel');
-            
+
             if ($transactionStatus === 'SUCCESS') {
                 $detailPesananModel
                     ->where('id_pesanan', $id_pesanan)
                     ->set(['status' => 'Sukses'])
                     ->update();
                 log_message('info', 'Order #' . $id_pesanan . ' updated to SUCCESS.');
-
             } else {
                 $detailPesananModel
                     ->where('id_pesanan', $id_pesanan)
@@ -192,7 +192,6 @@ class DokuController extends BaseController
             }
 
             return $this->response->setStatusCode(200, 'OK');
-
         } catch (\Exception $e) {
             log_message('error', 'DOKU Callback Exception: ' . $e->getMessage());
             return $this->response->setStatusCode(500, 'Internal Server Error');
@@ -203,10 +202,10 @@ class DokuController extends BaseController
     {
         $digest = base64_encode(hash('sha256', json_encode($requestBody), true));
         $stringToSign = "Client-Id:" . $this->clientId . "\n"
-                      . "Request-Id:" . $requestId . "\n"
-                      . "Request-Timestamp:" . $timestamp . "\n"
-                      . "Request-Target:" . $endpointUrl . "\n"
-                      . "Digest:" . $digest;
+            . "Request-Id:" . $requestId . "\n"
+            . "Request-Timestamp:" . $timestamp . "\n"
+            . "Request-Target:" . $endpointUrl . "\n"
+            . "Digest:" . $digest;
         $signature = base64_encode(hash_hmac('sha256', $stringToSign, $this->secretKey, true));
         return "HMACSHA256=" . $signature;
     }
@@ -218,18 +217,18 @@ class DokuController extends BaseController
         }
 
         $digest = base64_encode(hash('sha256', $requestBody, true));
-        
+
         $stringToSign = "Client-Id:" . $clientId . "\n"
-                      . "Request-Id:" . $requestId . "\n"
-                      . "Request-Timestamp:" . $timestamp . "\n"
-                      . "Request-Target:" . $endpointTarget . "\n"
-                      . "Digest:" . $digest;
-        
+            . "Request-Id:" . $requestId . "\n"
+            . "Request-Timestamp:" . $timestamp . "\n"
+            . "Request-Target:" . $endpointTarget . "\n"
+            . "Digest:" . $digest;
+
         $generatedSignature = base64_encode(hash_hmac('sha256', $stringToSign, $this->secretKey, true));
         $expectedSignature = "HMACSHA256=" . $generatedSignature;
-        
+
         log_message('debug', 'Expected Signature for Callback: ' . $expectedSignature);
-        
+
         return hash_equals($expectedSignature, $signatureFromHeader);
     }
 
