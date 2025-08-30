@@ -7,6 +7,7 @@
     <title>Pembeli - Kasir Online</title>
     <link href="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.css" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://sandbox.doku.com/jokul-checkout-js/v1/jokul-checkout-1.0.0.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -18,7 +19,7 @@
 </head>
 
 <body class="bg-gray-100 dark:bg-gray-900">
-    <!-- Navbar sederhana untuk pembeli -->
+    
     <nav class="bg-white dark:bg-gray-800 shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
@@ -36,8 +37,7 @@
             </div>
         </div>
     </nav>
-
-    <!-- Konten Utama -->
+    
     <div class="p-4">
         <?= $this->renderSection('content') ?>
     </div>

@@ -111,32 +111,25 @@
 
 <?= $this->section('scripts') ?>
 <script>
+    // Pastikan tombol memiliki id="checkout-button"
     document.getElementById('checkout-button').addEventListener('click', function() {
-        const url = '<?= base_url('doku/payment') ?>';
-        fetch(url, {
+        // Panggil backend Anda untuk mendapatkan URL pembayaran
+        fetch('<?= base_url('doku/payment') ?>', {
             method: 'POST'
         })
         .then(response => response.json())
         .then(data => {
-            if (data.status === 'success') {
-                alert('Pembayaran VA berhasil dibuat. Nomor Virtual Account Anda: ' + data.virtualAccountNo);
-                window.open("https://sandbox.doku.com/bo/simulator-payment", "_blank");
-                // Tambahkan baris ini untuk memuat ulang halaman secara otomatis
-                window.location.reload(); 
-
+            if (data.status === 'success' && data.paymentUrl) {
+                // Panggil fungsi dari DOKU JS untuk menampilkan pop-up
+                loadJokulCheckout(data.paymentUrl);
             } else {
-                const errorMessage = document.createElement('div');
-                errorMessage.className = 'p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400';
-                errorMessage.innerHTML = data.message;
-                document.querySelector('main').prepend(errorMessage);
+                // Tampilkan pesan error jika gagal
+                alert('Gagal membuat pembayaran: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            const errorMessage = document.createElement('div');
-            errorMessage.className = 'p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400';
-            errorMessage.innerHTML = 'Terjadi kesalahan saat memproses pembayaran.';
-            document.querySelector('main').prepend(errorMessage);
+            alert('Terjadi kesalahan saat memproses pembayaran.');
         });
     });
 </script>

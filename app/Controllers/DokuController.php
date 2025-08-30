@@ -3,180 +3,243 @@
 namespace App\Controllers;
 
 use CodeIgniter\Controller;
-use App\Models\PesananModel;
-use App\Models\DetailPesananModel;
-use App\Models\ProdukModel;
-use Doku\Snap\Snap;
-use Doku\Snap\Models\VA\Request\CreateVaRequestDto;
-use Doku\Snap\Models\TotalAmount\TotalAmount;
-use Doku\Snap\Models\VA\AdditionalInfo\CreateVaRequestAdditionalInfo;
-use Doku\Snap\Models\VA\VirtualAccountConfig\CreateVaVirtualAccountConfig;
+use DateTime;
+use DateTimeZone;
 
 class DokuController extends BaseController
 {
-    protected $pesananModel;
-    protected $detailPesananModel;
-    protected $produkModel;
-
-    private $dokuClient;
+    private $clientId;
+    private $secretKey;
+    private $isProduction = false;
 
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
-
-        $this->pesananModel = new PesananModel();
-        $this->detailPesananModel = new DetailPesananModel();
-        $this->produkModel = new ProdukModel();
-
-        $merchantPrivateKey = file_get_contents(ROOTPATH . 'keys/private.key');
-        $merchantPublicKey = file_get_contents(ROOTPATH . 'keys/public.pem');
-        $dokuPublicKey = getenv('doku.dokupublickey');
-        $clientId = getenv('doku.clientid');
-        $secretKey = getenv('doku.secretkey');
-
-        $this->dokuClient = new Snap(
-            $merchantPrivateKey,
-            $merchantPublicKey,
-            $dokuPublicKey,
-            $clientId,
-            '',
-            false,
-            $secretKey
-        );
+        
+        $this->clientId = getenv('doku.clientid');
+        $this->secretKey = getenv('doku.secretkey');
     }
 
+    /**
+     * Metode utama untuk memulai pembayaran dan mendapatkan URL checkout DOKU.
+     */
     public function payment()
     {
-        
-        $total_bayar = session()->get('total_bayar_pesanan');
         $id_pesanan = session()->get('id_pesanan');
-        $trxId = 'INV-' . $id_pesanan . '-' . date('YmdHis');
+        $items_in_cart = model('DetailPesananModel')
+            ->where('id_pesanan', $id_pesanan)
+            ->where('status !=', 'Refund')
+            ->findAll();
 
-        if (empty($total_bayar) || empty($id_pesanan)) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Keranjang belanja kosong atau data tidak valid.'
-            ])->setStatusCode(400);
+        if (empty($items_in_cart) || empty($id_pesanan)) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Keranjang kosong.'])->setStatusCode(400);
         }
         
-        $formattedAmount = number_format($total_bayar, 2, '.', '');
-        
-        $partnerServiceId = getenv('doku.partnerserviceid'); 
-        $customerNo = '9' . str_pad($id_pesanan, 7, '0', STR_PAD_LEFT);
-        $virtualAccountNo = $partnerServiceId . $customerNo;
+        $invoiceNumber = 'INV-' . $id_pesanan . '-' . substr(str_replace('.', '', uniqid('', true)), -6);
 
-        $additionalInfo = new CreateVaRequestAdditionalInfo(
-            'VIRTUAL_ACCOUNT_BCA', 
-            new CreateVaVirtualAccountConfig(true)
-        );
-
-        $request = new CreateVaRequestDto(
-            $partnerServiceId,
-            $customerNo,
-            $virtualAccountNo,
-            'Pelanggan Toko',
-            'pelanggan@example.com',
-            '081234567890',
-            $trxId,
-            new TotalAmount($formattedAmount, 'IDR'),
-            $additionalInfo,
-            'C', 
-            date('Y-m-d\TH:i:sP', strtotime('+1 day'))
-        );
-        
-        try {
-            $response = $this->dokuClient->createVa($request);
+        $line_items = [];
+        $calculated_amount = 0;
+        foreach ($items_in_cart as $item) {
+            $item_price = (int)$item['harga_satuan'];
+            $item_quantity = (int)$item['kuantitas'];
             
-            if (isset($response->virtualAccountData->virtualAccountNo)) {
-                // Hapus sesi keranjang setelah berhasil membuat VA
+            $line_items[] = [
+                'name'     => $item['nama_produk'],
+                'price'    => $item_price,
+                'quantity' => $item_quantity
+            ];
+            $calculated_amount += $item_price * $item_quantity;
+        }
+
+        $requestBody = [
+            'order' => [
+                'invoice_number' => $invoiceNumber,
+                'amount'         => $calculated_amount,
+                'line_items'     => $line_items,
+                'currency'       => 'IDR',
+                'callback_url'   => base_url('pembeli'),
+                'auto_redirect'  => true,
+            ],
+            'payment' => [
+                'payment_due_date' => 60,
+                'payment_method_types' => [
+                    "VIRTUAL_ACCOUNT_BCA",
+                    "VIRTUAL_ACCOUNT_BANK_MANDIRI",
+                    "VIRTUAL_ACCOUNT_BRI",
+                    "VIRTUAL_ACCOUNT_BNI",
+                    "VIRTUAL_ACCOUNT_BANK_PERMATA",
+                    "VIRTUAL_ACCOUNT_BANK_CIMB",
+                    "EMONEY_SHOPEEPAY",
+                    "EMONEY_OVO",
+                    "EMONEY_DANA",
+                    "CREDIT_CARD"
+                ]
+            ],
+            'customer' => [
+                'id'    => 'CUST-' . ($id_pesanan ?? 'UNKNOWN'),
+                'name'  => 'Pelanggan Toko',
+                'email' => 'pelanggan@example.com',
+                'phone' => '6281234567890'
+            ],
+            'shipping_address' => [
+                'first_name' => 'Pelanggan',
+                'last_name' => 'Toko',
+                'address' => 'Jalan Merdeka No. 1',
+                'city' => 'Jakarta',
+                'postal_code' => '12345',
+                'phone' => '081234567890',
+                'country_code' => 'IDN'
+            ]
+        ];
+        
+        $requestId = 'req-' . uniqid();
+        $timestamp = $this->getTimestamp();
+        $endpoint = '/checkout/v1/payment';
+        
+        $signature = $this->createSignature('POST', $endpoint, $requestBody, $timestamp, $requestId);
+
+        $client = \Config\Services::curlrequest();
+        try {
+            $response = $client->post($this->getBaseUrl() . $endpoint, [
+                'headers' => [
+                    'Client-Id'         => $this->clientId,
+                    'Request-Id'        => $requestId,
+                    'Request-Timestamp' => $timestamp,
+                    'Signature'         => $signature,
+                    'Content-Type'      => 'application/json'
+                ],
+                'body' => json_encode($requestBody),
+                'http_errors' => false
+            ]);
+
+            $responseBody = json_decode($response->getBody());
+
+            if ($response->getStatusCode() === 200 && isset($responseBody->response->payment->url)) {
                 session()->remove('id_pesanan');
                 session()->remove('total_bayar_pesanan');
-                session()->remove('keranjang'); 
+                session()->remove('keranjang');
 
                 return $this->response->setJSON([
                     'status' => 'success',
-                    'message' => 'Pembayaran VA berhasil dibuat.',
-                    'virtualAccountNo' => $response->virtualAccountData->virtualAccountNo
-                ])->setStatusCode(200);
+                    'paymentUrl' => $responseBody->response->payment->url
+                ]);
             } else {
-                return $this->response->setJSON([
-                    'status' => 'error',
-                    'message' => 'Gagal membuat VA. Pesan: ' . ($response->responseMessage ?? 'Unknown Error')
-                ])->setStatusCode(400);
+                log_message('error', 'DOKU Error: ' . $response->getBody());
+                $errorMessage = 'Terjadi kesalahan pada DOKU.';
+                if (isset($responseBody->error_messages) && is_array($responseBody->error_messages) && !empty($responseBody->error_messages)) {
+                    $errorMessage = implode(', ', $responseBody->error_messages);
+                }
+                return $this->response->setJSON(['status' => 'error', 'message' => $errorMessage])->setStatusCode(400);
             }
-            
+
         } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'Gagal memproses pembayaran: ' . $e->getMessage()
-            ])->setStatusCode(500);
+            log_message('error', 'DOKU Exception: ' . $e->getMessage());
+            return $this->response->setJSON(['status' => 'error', 'message' => $e->getMessage()])->setStatusCode(500);
         }
     }
-    
+
+    /**
+     * Endpoint untuk menerima notifikasi dari DOKU
+     */
     public function callback()
     {
-        // Log data mentah yang diterima
-        $request_body = $this->request->getBody();
-        log_message('info', 'DOKU Callback Payload: ' . $request_body);
-        $notification = json_decode($request_body, true);
+        try {
+            $clientId = $this->request->getHeaderLine('Client-Id');
+            $requestId = $this->request->getHeaderLine('Request-Id');
+            $requestTimestamp = $this->request->getHeaderLine('Request-Timestamp');
+            $signature = $this->request->getHeaderLine('Signature');
+            $requestBody = $this->request->getBody();
 
-        // Log detail untuk verifikasi
-        $signature = $this->request->getHeaderLine('X-Signature');
-        $timestamp = $this->request->getHeaderLine('X-Timestamp');
-        log_message('info', 'DOKU Callback: Headers: X-Signature: ' . $signature);
-        log_message('info', 'DOKU Callback: Headers: X-Timestamp: ' . $timestamp);
-        log_message('info', 'DOKU Callback: Notification Status: ' . ($notification['transaction']['status'] ?? 'UNKNOWN'));
+            log_message('info', 'DOKU Notification Received: ' . $requestBody);
+            log_message('info', 'DOKU Signature Header: ' . $signature);
 
-        // Ubah verifikasi tanda tangan menjadi 'if(true)' untuk pengujian
-        // PENTING: JANGAN PERNAH LAKUKAN INI DI PRODUKSI
-        if (true) {
-            $order_status = $notification['transaction']['status'] ?? 'UNKNOWN';
-
-            if ($order_status === 'SUCCESS') {
-                $transId = $notification['transaction']['id'] ?? null;
-                
-                log_message('info', 'DOKU Callback: Transaction ID: ' . $transId);
-
-                // Ekstrak ID Pesanan dari transId
-                $parts = explode('-', $transId);
-                $id_pesanan = $parts[1];
-                
-                log_message('info', 'DOKU Callback: Extracted Order ID: ' . $id_pesanan);
-
-                $items = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status', 'Pending')->findAll();
-                
-                if (!empty($items)) {
-                    log_message('info', 'DOKU Callback: Updating order ' . $id_pesanan . ' with ' . count($items) . ' items.');
-                    foreach ($items as $item) {
-                        $this->detailPesananModel->update($item['id_detail'], ['status' => 'Sukses']);
-                    }
-                    
-                    $total_bayar_sekarang = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status', 'Sukses')->selectSum('total_harga')->first()['total_harga'] ?? 0;
-                    $this->pesananModel->update($id_pesanan, ['total_bayar' => $total_bayar_sekarang]);
-
-                    session()->remove('id_pesanan');
-                    session()->remove('total_bayar_pesanan');
-                    log_message('info', 'DOKU Callback: Order ' . $id_pesanan . ' updated and session cleared.');
-                } else {
-                    log_message('warning', 'DOKU Callback: No pending items found for order ID ' . $id_pesanan);
-                }
-
-                return $this->response->setStatusCode(200);
-            } else {
-                log_message('warning', 'DOKU Callback: Transaction status is not SUCCESS. Status: ' . $order_status);
+            // Ganti endpoint target untuk validasi signature callback
+            $endpointTarget = '/doku/callback'; 
+            if (!$this->verifySignature($signature, $clientId, $requestId, $requestTimestamp, $requestBody, $endpointTarget)) {
+                log_message('error', 'DOKU Callback Signature Mismatch.');
+                return $this->response->setStatusCode(401, 'Unauthorized');
             }
-        } else {
-            // Bagian ini sekarang tidak akan pernah dieksekusi
-            log_message('warning', 'DOKU Callback: Signature verification failed.');
+
+            $data = json_decode($requestBody, true);
+            $transactionStatus = $data['transaction']['status'] ?? 'UNKNOWN';
+            $invoiceNumber = $data['order']['invoice_number'] ?? null;
+
+            if (!$invoiceNumber) {
+                throw new \Exception('Invoice number not found in DOKU notification.');
+            }
+
+            $parts = explode('-', $invoiceNumber);
+            if (count($parts) < 2 || !is_numeric($parts[1])) {
+                throw new \Exception('Invalid invoice number format: ' . $invoiceNumber);
+            }
+            $id_pesanan = $parts[1];
+
+            $detailPesananModel = model('DetailPesananModel');
+            
+            if ($transactionStatus === 'SUCCESS') {
+                $detailPesananModel
+                    ->where('id_pesanan', $id_pesanan)
+                    ->set(['status' => 'Sukses'])
+                    ->update();
+                log_message('info', 'Order #' . $id_pesanan . ' updated to SUCCESS.');
+
+            } else {
+                $detailPesananModel
+                    ->where('id_pesanan', $id_pesanan)
+                    ->set(['status' => 'Gagal'])
+                    ->update();
+                log_message('warning', 'Order #' . $id_pesanan . ' has status: ' . $transactionStatus);
+            }
+
+            return $this->response->setStatusCode(200, 'OK');
+
+        } catch (\Exception $e) {
+            log_message('error', 'DOKU Callback Exception: ' . $e->getMessage());
+            return $this->response->setStatusCode(500, 'Internal Server Error');
         }
-        
-        return $this->response->setStatusCode(400);
     }
 
-    private function verifyManualSignature($request_body, $signature, $timestamp)
+    private function createSignature(string $httpMethod, string $endpointUrl, array $requestBody, string $timestamp, string $requestId): string
     {
-        $secretKey = getenv('doku.secretkey');
-        $generatedSignature = hash('sha256', $request_body . $timestamp . $secretKey);
-        return $generatedSignature === $signature;
+        $digest = base64_encode(hash('sha256', json_encode($requestBody), true));
+        $stringToSign = "Client-Id:" . $this->clientId . "\n"
+                      . "Request-Id:" . $requestId . "\n"
+                      . "Request-Timestamp:" . $timestamp . "\n"
+                      . "Request-Target:" . $endpointUrl . "\n"
+                      . "Digest:" . $digest;
+        $signature = base64_encode(hash_hmac('sha256', $stringToSign, $this->secretKey, true));
+        return "HMACSHA256=" . $signature;
+    }
+
+    private function verifySignature($signatureFromHeader, $clientId, $requestId, $timestamp, $requestBody, $endpointTarget): bool
+    {
+        if (empty($signatureFromHeader) || $clientId !== $this->clientId) {
+            return false;
+        }
+
+        $digest = base64_encode(hash('sha256', $requestBody, true));
+        
+        $stringToSign = "Client-Id:" . $clientId . "\n"
+                      . "Request-Id:" . $requestId . "\n"
+                      . "Request-Timestamp:" . $timestamp . "\n"
+                      . "Request-Target:" . $endpointTarget . "\n"
+                      . "Digest:" . $digest;
+        
+        $generatedSignature = base64_encode(hash_hmac('sha256', $stringToSign, $this->secretKey, true));
+        $expectedSignature = "HMACSHA256=" . $generatedSignature;
+        
+        log_message('debug', 'Expected Signature for Callback: ' . $expectedSignature);
+        
+        return hash_equals($expectedSignature, $signatureFromHeader);
+    }
+
+    private function getTimestamp(): string
+    {
+        return (new DateTime('now', new DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z');
+    }
+
+    private function getBaseUrl(): string
+    {
+        return $this->isProduction ? 'https://api.doku.com' : 'https://api-sandbox.doku.com';
     }
 }
