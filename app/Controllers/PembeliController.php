@@ -205,6 +205,8 @@ class PembeliController extends BaseController
     }
     public function status()
     {
+        $id_pesanan = session()->getFlashdata('last_order_id');
+        $invoiceNumber = session()->getFlashdata('last_invoice_number');
         // Ambil invoice number dari sesi untuk ditampilkan
         $data['invoiceNumber'] = session()->get('current_invoice');
 

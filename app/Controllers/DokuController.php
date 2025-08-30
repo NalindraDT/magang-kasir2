@@ -38,6 +38,9 @@ class DokuController extends BaseController
 
         $invoiceNumber = 'INV-' . $id_pesanan . '-' . substr(str_replace('.', '', uniqid('', true)), -6);
 
+        session()->setFlashdata('last_invoice_number', $invoiceNumber);
+        session()->setFlashdata('last_order_id', $id_pesanan);
+        
         $line_items = [];
         $calculated_amount = 0;
         foreach ($items_in_cart as $item) {
