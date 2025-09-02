@@ -96,12 +96,26 @@
                     </a>
                 </li>
                 <li>
-                    <a href="<?= base_url('admin/restok') ?>" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                    <button type="button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" aria-controls="dropdown-stok" data-collapse-toggle="dropdown-stok">
                         <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
-                            <path fill-rule="evenodd" d="M12.5 2.008a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 0-.5.5v1.252a1.5 1.5 0 0 1-1.5 1.5H3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2.05A2.5 2.5 0 0 1 8 19.5a2.5 2.5 0 0 1 2.95-2.45 2.5 2.5 0 0 1 2.1 0A2.5 2.5 0 0 1 16 19.5a2.5 2.5 0 0 1 2.95-2.45H21a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-4.5a1.5 1.5 0 0 1-1.5-1.5V2.008ZM10 19.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-2-12a1 1 0 1 0-2 0v2a1 1 0 1 0 2 0v-2Z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h16v3H4V6zm0 5h16v7H4v-7z" clip-rule="evenodd" />
                         </svg>
-                        <span class="flex-1 ms-3 whitespace-nowrap">Restok Produk</span>
-                    </a>
+                        <span class="flex-1 ms-3 text-left rtl:text-right whitespace-nowrap">Stok</span>
+                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4" />
+                        </svg>
+                    </button>
+                    <ul id="dropdown-stok" class="hidden py-2 space-y-2">
+                        <li>
+                            <a href="<?= base_url('admin/restok/supplier') ?>" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Manajemen Supplier</a>
+                        </li>
+                        <li>
+                            <a href="<?= base_url('admin/restok') ?>" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Pemesanan Restok</a>
+                        </li>
+                        <li>
+                            <a href="<?= base_url('admin/restok/riwayat') ?>" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Riwayat Restok</a>
+                        </li>
+                    </ul>
                 </li>
             </ul>
         </div>

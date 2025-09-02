@@ -4,7 +4,7 @@
 <main class="p-4 pt-20 sm:ml-8">
     <div class="p-4 rounded-lg min-h-screen">
         <h1 class="text-3xl font-extrabold mb-8 text-gray-900 dark:text-white ml-8 tracking-tight">
-            📜 Riwayat Transaksi
+            Riwayat Transaksi
         </h1>
 
         <div class="relative overflow-x-auto shadow-xl sm:rounded-2xl mt-6 w-full max-w-6xl mx-auto ml-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">

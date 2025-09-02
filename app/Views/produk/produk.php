@@ -4,7 +4,7 @@
 <main class="p-4 pt-20 sm:ml-16 flex flex-col items-center">
     <div class="p-4 rounded-lg max-w-full w-full">
         <h1 class="text-3xl font-extrabold mb-8 text-gray-900 dark:text-white tracking-tight">
-            📦 Manajemen Produk
+            Manajemen Produk
         </h1>
 
         <!-- Pesan Status -->
