@@ -43,6 +43,20 @@
                                    dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                             placeholder="Jumlah stok" required>
                     </div>
+
+                    <div class="col-span-2">
+                        <label for="id_restoker" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Restoker / Supplier</label>
+                        <select name="id_restoker" id="id_restoker" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required>
+                            <option value="">-- Pilih Restoker --</option>
+                            <?php foreach ($restokers as $restoker): ?>
+                                <option value="<?= $restoker['id_restoker'] ?>" 
+                                    <?= (isset($produk) && $produk['id_restoker'] == $restoker['id_restoker']) ? 'selected' : '' ?>>
+                                    <?= esc($restoker['nama_restoker']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
                 </div>
 
                 <button type="submit"

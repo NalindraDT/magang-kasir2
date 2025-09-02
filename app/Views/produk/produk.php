@@ -21,7 +21,7 @@
         </a>
 
         <!-- Tabel Produk -->
-        <div class="relative overflow-x-auto shadow-xl sm:rounded-2xl mt-8 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+        <div class="relative overflow-x-auto shadow-xl sm:rounded-2xl mt-6 w-full max-w-6xl mx-auto ml-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <table class="w-full text-sm text-left text-gray-600 dark:text-gray-300">
                 <thead class="text-xs text-gray-700 uppercase bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 dark:text-gray-300">
                     <tr>
@@ -42,8 +42,9 @@
                     <?php else: ?>
                         <?php $no = 1; ?>
                         <?php foreach ($produks as $produk): ?>
-                            <tr class="border-b even:bg-gray-50 odd:bg-white dark:even:bg-gray-700 dark:odd:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-600 transition">
-                                <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white"><?= $no++ ?></td>
+                            <tr class="odd:bg-gray-900 even:bg-gray-800 text-white hover:bg-gray-700 transition-colors">
+                                <td class="px-6 py-4 font-semibold"><span class="px-3 py-1 text-sm rounded-lg bg-blue-600 text-white"><?= $no++ ?></span>
+                            </td>
                                 <td class="px-6 py-4"><?= $produk['nama_produk'] ?></td>
                                 <td class="px-6 py-4 font-medium">Rp <?= number_format($produk['harga'], 0, ',', '.') ?></td>
                                 <td class="px-6 py-4">

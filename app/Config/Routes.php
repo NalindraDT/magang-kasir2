@@ -28,6 +28,18 @@ $routes->group('admin', ['filter' => 'auth_admin'], function ($routes) {
     $routes->get('transaksi/refund/(:num)', 'TransaksiController::refund/$1');
     $routes->get('transaksi/hapus/(:num)', 'TransaksiController::hapus/$1');
     $routes->get('transaksi/cetak/(:num)', 'TransaksiController::cetak/$1');
+
+// Rute untuk Halaman Restok & Supplier
+    $routes->get('restok', 'RestokController::index');
+    $routes->post('restok/create', 'RestokController::create');
+    $routes->post('restok/update/(:num)', 'RestokController::update/$1');
+    $routes->get('restok/get-produk/(:num)', 'RestokController::getProdukByRestoker/$1');
+    $routes->post('restok/return/(:num)', 'RestokController::return/$1');
+    
+    // Rute baru untuk CRUD Supplier
+    $routes->post('restok/supplier/create', 'RestokController::supplierCreate');
+    $routes->post('restok/supplier/update/(:num)', 'RestokController::supplierUpdate/$1');
+    $routes->get('restok/supplier/delete/(:num)', 'RestokController::supplierDelete/$1');
 });
 
 // Pindahkan rute login dan logout keluar dari grup admin

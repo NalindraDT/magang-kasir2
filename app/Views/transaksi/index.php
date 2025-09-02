@@ -73,13 +73,13 @@
                                 <td class="px-6 py-4 font-medium">Rp <?= number_format($total_pesanan, 0, ',', '.') ?></td>
                                 <td class="px-6 py-4">
                                     <?php if ($has_pending): ?>
-                                        <span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-500 text-white">Pending</span>
+                                        <span class="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300">Pending</span>
                                     <?php elseif ($all_success): ?>
-                                        <span class="px-2 py-1 rounded-full text-xs font-bold bg-green-600 text-white">Sukses</span>
+                                        <span class="px-2 py-1 text-xs font-bold rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Sukses</span>
                                     <?php elseif ($has_refund): ?>
-                                        <span class="px-2 py-1 rounded-full text-xs font-bold bg-yellow-500 text-white">Sebagian Refund</span>
+                                        <span class="px-2 py-1 text-xs font-bold rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">Sebagian Refund</span>
                                     <?php else: ?>
-                                        <span class="px-2 py-1 rounded-full text-xs font-bold bg-red-600 text-white">Full Refund</span>
+                                        <span class="px-2 py-1 text-xs font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">Full Refund</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="px-6 py-4 text-center">

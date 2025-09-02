@@ -3,14 +3,17 @@
 namespace App\Controllers;
 
 use App\Models\ProdukModel;
+use App\Models\RestokerModel; // TAMBAHKAN INI
 
 class ProdukTampilan extends BaseController
 {
     protected $produkModel;
+    protected $restokerModel; // TAMBAHKAN INI
 
     public function __construct()
     {
         $this->produkModel = new ProdukModel();
+        $this->restokerModel = new RestokerModel(); // TAMBAHKAN INI
     }
 
     public function index()
@@ -24,8 +27,9 @@ class ProdukTampilan extends BaseController
 
     public function tambah()
     {
-        // Metode ini yang akan merender halaman form tambah produk
-        return view('produk/produk_view_form');
+        // Ambil data restoker untuk dropdown
+        $data['restokers'] = $this->restokerModel->findAll();
+        return view('produk/produk_view_form', $data);
     }
 
     public function simpan()
@@ -35,6 +39,7 @@ class ProdukTampilan extends BaseController
             'nama_produk' => $this->request->getPost('nama_produk'),
             'harga' => $this->request->getPost('harga'),
             'stok' => $this->request->getPost('stok'),
+            'id_restoker' => $this->request->getPost('id_restoker'), // TAMBAHKAN INI
         ];
         
         // Validasi input
@@ -42,6 +47,7 @@ class ProdukTampilan extends BaseController
             'nama_produk' => 'required|string|max_length[255]|is_unique[produk.nama_produk]',
             'harga' => 'required|numeric|greater_than_equal_to[0]',
             'stok' => 'required|integer|greater_than_equal_to[0]',
+            'id_restoker' => 'required|integer', // TAMBAHKAN INI
         ];
 
         if (!$this->validate($rules)) {
@@ -65,6 +71,9 @@ class ProdukTampilan extends BaseController
             throw new \CodeIgniter\Exceptions\PageNotFoundException('Produk tidak ditemukan.');
         }
 
+        // Ambil juga data restoker untuk dropdown
+        $data['restokers'] = $this->restokerModel->findAll();
+
         return view('produk/produk_view_form', $data);
     }
 
@@ -75,6 +84,7 @@ class ProdukTampilan extends BaseController
             'nama_produk' => $this->request->getPost('nama_produk'),
             'harga' => $this->request->getPost('harga'),
             'stok' => $this->request->getPost('stok'),
+            'id_restoker' => $this->request->getPost('id_restoker'), // TAMBAHKAN INI
         ];
         
         // Validasi unik nama produk, abaikan produk dengan ID yang sedang diedit
@@ -82,6 +92,7 @@ class ProdukTampilan extends BaseController
             'nama_produk' => "required|string|max_length[255]|is_unique[produk.nama_produk,id_produk,{$id}]",
             'harga' => 'required|numeric|greater_than_equal_to[0]',
             'stok' => 'required|integer|greater_than_equal_to[0]',
+            'id_restoker' => 'required|integer', // TAMBAHKAN INI
         ];
 
         if (!$this->validate($rules)) {

@@ -16,6 +16,7 @@ class ProdukModel extends Model
         'nama_produk',
         'harga',
         'stok',
+        'id_restoker',
     ];
     protected $useTimestamps = false; 
 }
