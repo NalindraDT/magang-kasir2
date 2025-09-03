@@ -42,6 +42,7 @@
                 <thead class="text-xs text-gray-700 uppercase bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 dark:text-gray-300">
                     <tr>
                         <th scope="col" class="px-6 py-4">No</th>
+                        <th scope="col" class="px-6 py-4">Gambar</th>
                         <th scope="col" class="px-6 py-4">Nama Produk</th>
                         <th scope="col" class="px-6 py-4">Harga</th>
                         <th scope="col" class="px-6 py-4">Stok</th>
@@ -60,6 +61,9 @@
                         <?php foreach ($produks as $produk): ?>
                             <tr class="odd:bg-gray-900 even:bg-gray-800 text-white hover:bg-gray-700 transition-colors">
                                 <td class="px-6 py-4 font-semibold"><span class="px-3 py-1 text-sm rounded-lg bg-blue-600 text-white"><?= $no++ ?></span></td>
+                                <td class="px-6 py-4">
+                                    <img src="<?= base_url('uploads/produk/' . $produk['gambar_produk']) ?>" alt="<?= $produk['nama_produk'] ?>" class="w-16 h-16 object-cover rounded-lg">
+                                </td>
                                 <td class="px-6 py-4"><?= $produk['nama_produk'] ?></td>
                                 <td class="px-6 py-4 font-medium">Rp <?= number_format($produk['harga'], 0, ',', '.') ?></td>
                                 <td class="px-6 py-4">

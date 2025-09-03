@@ -68,6 +68,7 @@ $routes->post('pembeli/updateCart/(:num)', 'PembeliController::updateCart/$1');
 $routes->get('pembeli/status', 'PembeliController::status');
 $routes->get('pembeli/status/(:any)', 'PembeliController::status/$1');
 $routes->get('pembeli/check_status/(:any)', 'PembeliController::check_status/$1');
+$routes->post('pembeli/add_to_cart', 'PembeliController::addToCart');
 
 // Rute untuk API (tetap terpisah)
 $routes->group('api', function ($routes) {

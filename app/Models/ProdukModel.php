@@ -17,6 +17,7 @@ class ProdukModel extends Model
         'harga',
         'stok',
         'id_restoker',
+        'gambar_produk',
     ];
     protected $useTimestamps = false; 
 }

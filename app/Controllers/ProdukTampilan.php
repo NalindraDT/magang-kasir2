@@ -21,7 +21,7 @@ class ProdukTampilan extends BaseController
     {
         // Ambil semua data produk dari model
         $data['produks'] = $this->produkModel->findAll();
-        
+
         // Kirim data ke view untuk ditampilkan
         return view('produk/produk', $data);
     }
@@ -35,26 +35,43 @@ class ProdukTampilan extends BaseController
 
     public function simpan()
     {
-        // Ambil data dari form
-        $data = [
-            'nama_produk' => $this->request->getPost('nama_produk'),
-            'harga' => $this->request->getPost('harga'),
-            'stok' => $this->request->getPost('stok'),
-            'id_restoker' => $this->request->getPost('id_restoker'), // TAMBAHKAN INI
-        ];
-        
         // Validasi input
         $rules = [
             'nama_produk' => 'required|string|max_length[255]|is_unique[produk.nama_produk]',
             'harga' => 'required|numeric|greater_than_equal_to[0]',
             'stok' => 'required|integer|greater_than_equal_to[0]',
-            'id_restoker' => 'required|integer', // TAMBAHKAN INI
+            'id_restoker' => 'required|integer',
+            'gambar_produk' => [
+                'rules' => 'uploaded[gambar_produk]|max_size[gambar_produk,1024]|is_image[gambar_produk]|mime_in[gambar_produk,image/jpg,image/jpeg,image/png]',
+                'errors' => [
+                    'uploaded' => 'Pilih gambar produk terlebih dahulu.',
+                    'max_size' => 'Ukuran gambar terlalu besar.',
+                    'is_image' => 'File yang diunggah bukan gambar.',
+                    'mime_in' => 'Format gambar harus jpg, jpeg, atau png.'
+                ]
+            ]
         ];
 
         if (!$this->validate($rules)) {
             session()->setFlashdata('errors', $this->validator->getErrors());
             return redirect()->back()->withInput();
         }
+
+        // Ambil file gambar
+        $gambarProduk = $this->request->getFile('gambar_produk');
+
+        // Pindahkan file ke folder public/uploads/produk
+        $namaGambar = $gambarProduk->getRandomName();
+        $gambarProduk->move('uploads/produk', $namaGambar);
+
+        // Ambil data dari form
+        $data = [
+            'nama_produk' => $this->request->getPost('nama_produk'),
+            'harga' => $this->request->getPost('harga'),
+            'stok' => $this->request->getPost('stok'),
+            'id_restoker' => $this->request->getPost('id_restoker'),
+            'gambar_produk' => $namaGambar, // Simpan nama file gambar
+        ];
 
         // Simpan data ke database
         $this->produkModel->save($data);
@@ -78,27 +95,52 @@ class ProdukTampilan extends BaseController
         return view('produk/produk_view_form', $data);
     }
 
+
     public function update()
     {
         $id = $this->request->getPost('id_produk');
-        $data = [
-            'nama_produk' => $this->request->getPost('nama_produk'),
-            'harga' => $this->request->getPost('harga'),
-            'stok' => $this->request->getPost('stok'),
-            'id_restoker' => $this->request->getPost('id_restoker'), // TAMBAHKAN INI
-        ];
-        
+
         // Validasi unik nama produk, abaikan produk dengan ID yang sedang diedit
         $rules = [
             'nama_produk' => "required|string|max_length[255]|is_unique[produk.nama_produk,id_produk,{$id}]",
             'harga' => 'required|numeric|greater_than_equal_to[0]',
             'stok' => 'required|integer|greater_than_equal_to[0]',
-            'id_restoker' => 'required|integer', // TAMBAHKAN INI
+            'id_restoker' => 'required|integer',
+            'gambar_produk' => [
+                'rules' => 'max_size[gambar_produk,1024]|is_image[gambar_produk]|mime_in[gambar_produk,image/jpg,image/jpeg,image/png]',
+                'errors' => [
+                    'max_size' => 'Ukuran gambar terlalu besar.',
+                    'is_image' => 'File yang diunggah bukan gambar.',
+                    'mime_in' => 'Format gambar harus jpg, jpeg, atau png.'
+                ]
+            ]
         ];
 
         if (!$this->validate($rules)) {
             session()->setFlashdata('errors', $this->validator->getErrors());
             return redirect()->back()->withInput();
+        }
+
+        $data = [
+            'nama_produk' => $this->request->getPost('nama_produk'),
+            'harga' => $this->request->getPost('harga'),
+            'stok' => $this->request->getPost('stok'),
+            'id_restoker' => $this->request->getPost('id_restoker'),
+        ];
+
+        // Cek apakah ada file gambar yang diunggah
+        $gambarProduk = $this->request->getFile('gambar_produk');
+        if ($gambarProduk->isValid() && !$gambarProduk->hasMoved()) {
+            // Hapus gambar lama jika ada
+            $produkLama = $this->produkModel->find($id);
+            if ($produkLama['gambar_produk'] && file_exists('uploads/produk/' . $produkLama['gambar_produk'])) {
+                unlink('uploads/produk/' . $produkLama['gambar_produk']);
+            }
+
+            // Pindahkan file baru
+            $namaGambar = $gambarProduk->getRandomName();
+            $gambarProduk->move('uploads/produk', $namaGambar);
+            $data['gambar_produk'] = $namaGambar;
         }
 
         $this->produkModel->update($id, $data);
@@ -109,6 +151,14 @@ class ProdukTampilan extends BaseController
 
     public function hapus($id = null)
     {
+        // Ambil data produk untuk mendapatkan nama file gambar
+        $produk = $this->produkModel->find($id);
+
+        // Hapus file gambar jika ada
+        if ($produk['gambar_produk'] && file_exists('uploads/produk/' . $produk['gambar_produk'])) {
+            unlink('uploads/produk/' . $produk['gambar_produk']);
+        }
+
         // Hapus produk dari database
         $this->produkModel->delete($id);
 
@@ -184,7 +234,6 @@ class ProdukTampilan extends BaseController
             }
 
             return redirect()->to(base_url('admin/produk'))->with('message', $message);
-
         } catch (\Exception $e) {
             return redirect()->to(base_url('admin/produk'))->with('error', 'Terjadi kesalahan saat memproses file: ' . $e->getMessage());
         }
@@ -204,7 +253,7 @@ class ProdukTampilan extends BaseController
             $sheet->setCellValue('B1', 'Harga');
             $sheet->setCellValue('C1', 'Stok');
             $sheet->setCellValue('D1', 'ID Restoker (Opsional)');
-            
+
             // Contoh data
             $sheet->setCellValue('A2', 'Contoh Produk 1');
             $sheet->setCellValue('B2', '15000');
@@ -214,7 +263,7 @@ class ProdukTampilan extends BaseController
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
             $writer->save($filepath);
         }
-        
+
         return $this->response->download($filepath, null)->setFileName($filename);
     }
 }

@@ -11,94 +11,109 @@ class PembeliController extends BaseController
     protected $produkModel;
     protected $pesananModel;
     protected $detailPesananModel;
+    protected $db; // Tambahkan properti ini
 
     public function __construct()
     {
         $this->produkModel = new ProdukModel();
         $this->pesananModel = new PesananModel();
         $this->detailPesananModel = new DetailPesananModel();
+        $this->db = \Config\Database::connect(); // Inisialisasi koneksi database
     }
 
     public function index()
     {
         $data['produks'] = $this->produkModel->findAll();
-        $data['keranjang'] = $this->detailPesananModel
-            ->where('id_pesanan', session()->get('id_pesanan'))
-            ->where('status !=', 'Refund')
-            ->findAll();
-        $data['jumlah_keranjang'] = count($data['keranjang']);
+        $id_pesanan = session()->get('id_pesanan');
+        $data['keranjang'] = [];
+        if ($id_pesanan) {
+            $data['keranjang'] = $this->detailPesananModel
+                ->where('id_pesanan', $id_pesanan)
+                ->where('status !=', 'Refund')
+                ->findAll();
+        }
         return view('pembeli/index', $data);
     }
 
-    public function beli()
+    public function addToCart()
     {
-        $kuantitas_request = $this->request->getPost('kuantitas');
-        $item_dipilih = array_filter($kuantitas_request, function ($kuantitas) {
-            return $kuantitas > 0;
-        });
+        // Hanya izinkan request AJAX
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(403, 'Forbidden');
+        }
+        
+        $id_produk = $this->request->getPost('id_produk');
+        $produk = $this->produkModel->find($id_produk);
 
-        if (empty($item_dipilih)) {
-            session()->setFlashdata('error', 'Pilih setidaknya satu produk untuk dibeli.');
-            return redirect()->to(base_url('pembeli'));
+        if (!$produk || $produk['stok'] < 1) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Stok produk tidak mencukupi.']);
         }
 
+        // Dapatkan atau buat pesanan baru
         $id_pesanan = session()->get('id_pesanan');
         if (!$id_pesanan) {
-            $data_pesanan = ['total_bayar' => 0];
-            $this->pesananModel->save($data_pesanan);
+            $this->pesananModel->save(['total_bayar' => 0]);
             $id_pesanan = $this->pesananModel->insertID();
             session()->set('id_pesanan', $id_pesanan);
         }
 
-        foreach ($item_dipilih as $id_produk => $kuantitas) {
-            $produk = $this->produkModel->find($id_produk);
+        // Cek apakah item sudah ada di keranjang
+        $item_keranjang = $this->detailPesananModel
+            ->where('id_pesanan', $id_pesanan)
+            ->where('id_produk', $id_produk)
+            ->where('status !=', 'Refund')
+            ->first();
+        
+        $this->db->transStart();
 
-            if ($produk && $produk['stok'] >= $kuantitas) {
-                $existing_item = $this->detailPesananModel
-                    ->where('id_pesanan', $id_pesanan)
-                    ->where('id_produk', $id_produk)
-                    ->where('status !=', 'Refund')
-                    ->first();
+        if ($item_keranjang) {
+            // Jika sudah ada, tambah kuantitasnya
+            $kuantitas_baru = $item_keranjang['kuantitas'] + 1;
+            $this->detailPesananModel->update($item_keranjang['id_detail'], [
+                'kuantitas' => $kuantitas_baru,
+                'total_harga' => $kuantitas_baru * $produk['harga']
+            ]);
+        } else {
+            // Jika belum ada, buat item baru
+            $this->detailPesananModel->save([
+                'id_pesanan' => $id_pesanan,
+                'id_produk' => $id_produk,
+                'nama_produk' => $produk['nama_produk'],
+                'kuantitas' => 1,
+                'harga_satuan' => $produk['harga'],
+                'total_harga' => $produk['harga'],
+                'status' => 'Pending'
+            ]);
+        }
+        
+        // Kurangi stok produk
+        $this->produkModel->update($id_produk, ['stok' => $produk['stok'] - 1]);
+        
+        // Update total bayar
+        $total_bayar = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status !=', 'Refund')->selectSum('total_harga')->first()['total_harga'] ?? 0;
+        $this->pesananModel->update($id_pesanan, ['total_bayar' => $total_bayar]);
 
-                if ($existing_item) {
-                    $new_kuantitas = $existing_item['kuantitas'] + $kuantitas;
-                    $total_harga_item = $new_kuantitas * $produk['harga'];
-                    $this->detailPesananModel->update($existing_item['id_detail'], [
-                        'kuantitas' => $new_kuantitas,
-                        'total_harga' => $total_harga_item
-                    ]);
-                } else {
-                    $total_harga_item = $kuantitas * $produk['harga'];
-                    $data_detail = [
-                        'id_pesanan' => $id_pesanan,
-                        'id_produk' => $id_produk,
-                        'nama_produk' => $produk['nama_produk'],
-                        'kuantitas' => $kuantitas,
-                        'harga_satuan' => $produk['harga'],
-                        'total_harga' => $total_harga_item,
-                        'status' => 'Pending'
-                    ];
-                    $this->detailPesananModel->save($data_detail);
-                }
-
-                $new_stok = $produk['stok'] - $kuantitas;
-                $this->produkModel->update($id_produk, ['stok' => $new_stok]);
-            } else {
-                session()->setFlashdata('error', 'Pembelian gagal. Stok produk ' . $produk['nama_produk'] . ' tidak mencukupi atau data tidak valid.');
-                return redirect()->to(base_url('pembeli'));
-            }
+        $this->db->transComplete();
+        
+        if ($this->db->transStatus() === false) {
+             return $this->response->setJSON(['status' => 'error', 'message' => 'Gagal menambahkan ke keranjang.']);
         }
 
-        $total_bayar_sekarang = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status !=', 'Refund')->selectSum('total_harga')->first()['total_harga'] ?? 0;
-        $this->pesananModel->update($id_pesanan, ['total_bayar' => $total_bayar_sekarang]);
+        // Kirim kembali HTML keranjang yang sudah di-render
+        $data['keranjang'] = $this->detailPesananModel
+                ->where('id_pesanan', $id_pesanan)
+                ->where('status !=', 'Refund')
+                ->findAll();
 
-        // Simpan total_bayar ke session agar bisa diakses di DokuController
-        session()->set('total_bayar_pesanan', $total_bayar_sekarang);
-
-        session()->setFlashdata('message', 'Pembelian berhasil!');
-        return redirect()->to(base_url('pembeli'));
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Produk ditambahkan ke keranjang!',
+            'cart_html' => view('pembeli/_keranjang', $data)
+        ]);
     }
-
+    
+    // Metode lain di bawah sini (removeFromCart, cetakNota, dll.) tetap sama
+    // ...
     public function removeFromCart($id_detail)
     {
         $item = $this->detailPesananModel->find($id_detail);
