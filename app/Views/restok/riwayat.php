@@ -3,11 +3,18 @@
 <?= $this->section('content') ?>
 <main class="p-4 pt-20 sm:ml-16">
     <div class="p-4 rounded-lg w-full">
-
-        <h1 class="text-3xl font-extrabold mb-8 text-gray-900 dark:text-white tracking-tight">
-            Riwayat Restok per Produk
-        </h1>
-
+        <div class="flex justify-between items-center mb-8 ml-8">
+            <h1 class="text-3xl font-extrabold mb-8 text-gray-900 dark:text-white tracking-tight">
+                Riwayat Restok per Produk
+            </h1>
+            <a href="<?= base_url('admin/restok/export') ?>"
+                class="inline-flex items-center gap-2 text-white bg-green-600 hover:bg-green-700 font-semibold rounded-lg text-sm px-5 py-2.5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                Export ke CSV
+            </a>
+        </div>
         <div class="relative overflow-x-auto shadow-xl sm:rounded-2xl mt-6 w-full max-w-6xl mx-auto">
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
@@ -30,9 +37,9 @@
                         <?php $no = 1; ?>
                         <?php foreach ($grouped_restok as $nama_produk => $data): ?>
                             <?php
-                                // Kalkulasi untuk summary
-                                $jumlahAkhir = $data['summary']['total_diterima'] - $data['summary']['total_retur'];
-                                $totalBelumDiterima = $data['summary']['total_pesan'] - $data['summary']['total_diterima'];
+                            // Kalkulasi untuk summary
+                            $jumlahAkhir = $data['summary']['total_diterima'] - $data['summary']['total_retur'];
+                            $totalBelumDiterima = $data['summary']['total_pesan'] - $data['summary']['total_diterima'];
                             ?>
                             <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                                 <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white"><?= $no ?></td>
@@ -40,7 +47,7 @@
                                     <button type="button" class="flex items-center justify-between w-full text-left font-medium" data-collapse-toggle="details-<?= $no ?>">
                                         <span><?= esc($nama_produk) ?> (<?= count($data['details']) ?> transaksi)</span>
                                         <svg class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
+                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5" />
                                         </svg>
                                     </button>
                                 </td>
@@ -95,4 +102,3 @@
     </div>
 </main>
 <?= $this->endSection() ?>
-

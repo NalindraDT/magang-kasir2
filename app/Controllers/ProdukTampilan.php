@@ -3,7 +3,8 @@
 namespace App\Controllers;
 
 use App\Models\ProdukModel;
-use App\Models\RestokerModel; // TAMBAHKAN INI
+use App\Models\RestokerModel;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ProdukTampilan extends BaseController
 {
@@ -115,5 +116,105 @@ class ProdukTampilan extends BaseController
         // Redirect kembali ke halaman produk dengan pesan sukses
         session()->setFlashdata('message', 'Produk berhasil dihapus!');
         return redirect()->to(base_url('admin/produk?page=' . $page));
+    }
+    public function import()
+    {
+        $file = $this->request->getFile('excel_file');
+
+        // Validasi file
+        if ($file === null || !$file->isValid() || !in_array($file->getMimeType(), ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])) {
+            return redirect()->to(base_url('admin/produk'))->with('error', 'File tidak valid atau bukan file Excel. Silakan unggah file .xls atau .xlsx');
+        }
+
+        try {
+            // Baca file Excel
+            $spreadsheet = IOFactory::load($file->getTempName());
+            $worksheet = $spreadsheet->getActiveSheet();
+            $rows = $worksheet->toArray();
+
+            $importedCount = 0;
+            $errorCount = 0;
+            $errors = [];
+
+            // Loop melalui setiap baris (mulai dari baris ke-2 untuk melewati header)
+            foreach ($rows as $key => $row) {
+                if ($key == 0) {
+                    continue; // Lewati baris header
+                }
+
+                // Asumsikan urutan kolom: Nama Produk, Harga, Stok, ID Restoker (Opsional)
+                $nama_produk = $row[0] ?? null;
+                $harga = $row[1] ?? null;
+                $stok = $row[2] ?? null;
+                $id_restoker = $row[3] ?? null;
+
+                // Validasi data sederhana
+                if (empty($nama_produk) || !is_numeric($harga) || !is_numeric($stok)) {
+                    $errorCount++;
+                    $errors[] = "Baris " . ($key + 1) . ": Data tidak lengkap atau format salah.";
+                    continue;
+                }
+
+                // Cek apakah produk sudah ada
+                $existingProduct = $this->produkModel->where('nama_produk', $nama_produk)->first();
+                if ($existingProduct) {
+                    // Jika sudah ada, update data
+                    $this->produkModel->update($existingProduct['id_produk'], [
+                        'harga' => $harga,
+                        'stok' => $stok,
+                        'id_restoker' => $id_restoker
+                    ]);
+                } else {
+                    // Jika belum ada, insert data baru
+                    $this->produkModel->insert([
+                        'nama_produk' => $nama_produk,
+                        'harga' => $harga,
+                        'stok' => $stok,
+                        'id_restoker' => $id_restoker
+                    ]);
+                }
+                $importedCount++;
+            }
+
+            $message = "Berhasil mengimpor atau memperbarui {$importedCount} produk.";
+            if ($errorCount > 0) {
+                session()->setFlashdata('import_errors', $errors);
+                $message .= " Gagal memproses {$errorCount} baris.";
+                return redirect()->to(base_url('admin/produk'))->with('error', $message);
+            }
+
+            return redirect()->to(base_url('admin/produk'))->with('message', $message);
+
+        } catch (\Exception $e) {
+            return redirect()->to(base_url('admin/produk'))->with('error', 'Terjadi kesalahan saat memproses file: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadTemplate()
+    {
+        // Nama file template
+        $filename = 'template_import_produk.xlsx';
+        $filepath = WRITEPATH . 'template_import_produk.xlsx';
+
+        // Buat file template jika belum ada
+        if (!file_exists($filepath)) {
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setCellValue('A1', 'Nama Produk');
+            $sheet->setCellValue('B1', 'Harga');
+            $sheet->setCellValue('C1', 'Stok');
+            $sheet->setCellValue('D1', 'ID Restoker (Opsional)');
+            
+            // Contoh data
+            $sheet->setCellValue('A2', 'Contoh Produk 1');
+            $sheet->setCellValue('B2', '15000');
+            $sheet->setCellValue('C2', '100');
+            $sheet->setCellValue('D2', '1');
+
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save($filepath);
+        }
+        
+        return $this->response->download($filepath, null)->setFileName($filename);
     }
 }

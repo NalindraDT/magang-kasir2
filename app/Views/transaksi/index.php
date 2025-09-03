@@ -3,9 +3,18 @@
 <?= $this->section('content') ?>
 <main class="p-4 pt-20 sm:ml-8">
     <div class="p-4 rounded-lg min-h-screen">
-        <h1 class="text-3xl font-extrabold mb-8 text-gray-900 dark:text-white ml-8 tracking-tight">
-            Riwayat Transaksi
-        </h1>
+        <div class="flex justify-between items-center mb-8 ml-8">
+            <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                Riwayat Transaksi
+            </h1>
+            <a href="<?= base_url('admin/transaksi/export') ?>"
+                class="inline-flex items-center gap-2 text-white bg-green-600 hover:bg-green-700 font-semibold rounded-lg text-sm px-5 py-2.5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                Ekspor ke CSV
+            </a>
+        </div>
 
         <div class="relative overflow-x-auto shadow-xl sm:rounded-2xl mt-6 w-full max-w-6xl mx-auto ml-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <table class="w-full text-sm text-left text-gray-600 dark:text-gray-300">

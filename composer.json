@@ -14,7 +14,8 @@
         "codeigniter4/framework": "^4.0",
         "doku/doku-php-library": "^1.0",
         "google/apiclient": "^2.18",
-        "guzzlehttp/guzzle": "^7.10"
+        "guzzlehttp/guzzle": "^7.10",
+        "phpoffice/phpspreadsheet": "^5.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9",

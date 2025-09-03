@@ -22,9 +22,13 @@ $routes->group('admin', ['filter' => 'auth_admin'], function ($routes) {
     $routes->get('produk/edit/(:num)', 'ProdukTampilan::edit/$1');
     $routes->post('produk/update', 'ProdukTampilan::update');
     $routes->get('produk/hapus/(:num)', 'ProdukTampilan::hapus/$1');
+    // RUTE UNTUK FITUR IMPORT EXCEL (TAMBAHKAN INI)
+    $routes->get('produk/download-template', 'ProdukTampilan::downloadTemplate');
+    $routes->post('produk/import', 'ProdukTampilan::import');
 
     // Rute untuk Halaman Transaksi
     $routes->get('transaksi', 'TransaksiController::index');
+    $routes->get('transaksi/export', 'TransaksiController::export');
     $routes->get('transaksi/refund/(:num)', 'TransaksiController::refund/$1');
     $routes->get('transaksi/hapus/(:num)', 'TransaksiController::hapus/$1');
     $routes->get('transaksi/cetak/(:num)', 'TransaksiController::cetak/$1');
@@ -32,6 +36,7 @@ $routes->group('admin', ['filter' => 'auth_admin'], function ($routes) {
     // Rute untuk Halaman Restok & Supplier
     $routes->get('restok', 'RestokController::index');
     $routes->get('restok/riwayat', 'RestokController::riwayat');
+    $routes->get('restok/export', 'RestokController::exportRiwayat');
     $routes->post('restok/create', 'RestokController::create');
     $routes->post('restok/update/(:num)', 'RestokController::update/$1');
     $routes->get('restok/get-produk/(:num)', 'RestokController::getProdukByRestoker/$1');

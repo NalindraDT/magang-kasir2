@@ -253,7 +253,7 @@
             });
         }
 
-        // --- Skrip untuk Modal Konfirmasi Penerimaan ---
+        // --- Skrip untuk Modal Konfirmasi Penerimaan (YANG DIPERBARUI) ---
         const konfirmasiButtons = document.querySelectorAll('.btn-konfirmasi');
         const formKonfirmasi = document.getElementById('form-konfirmasi');
         const namaProdukKonfirmasi = document.getElementById('konfirmasi-nama-produk');
@@ -270,7 +270,11 @@
                 formKonfirmasi.action = `<?= base_url('admin/restok/update/') ?>/${idRestok}`;
                 namaProdukKonfirmasi.textContent = namaProduk;
                 jumlahPesanKonfirmasi.value = jumlahPesan;
+                
+                // Set nilai dan batasan input
                 jumlahDiterimaInput.value = jumlahDiterima;
+                jumlahDiterimaInput.min = jumlahDiterima; // Batas minimal adalah jumlah yg sudah diterima
+                jumlahDiterimaInput.max = jumlahPesan; // Batas maksimal adalah jumlah yg dipesan
             });
         });
 

@@ -124,21 +124,29 @@ class RestokController extends BaseController
             return redirect()->to(base_url('admin/restok'))->with('error', 'Data restok tidak ditemukan.');
         }
 
+        // Ambil jumlah yang sudah diterima sebelumnya
+        $jumlahDiterimaSebelumnya = (int)($restok['jumlah_diterima'] ?? 0);
+
+        // Aturan validasi baru
         $rules = [
             'jumlah_diterima' => [
-                'rules'  => 'required|integer|greater_than_equal_to[0]|less_than_equal_to[' . $restok['jumlah_pesan'] . ']',
-                'errors' => ['less_than_equal_to' => 'Jumlah produk yang diterima tidak boleh melebihi jumlah yang dipesan.'],
+                'rules'  => 'required|integer|greater_than_equal_to[' . $jumlahDiterimaSebelumnya . ']|less_than_equal_to[' . $restok['jumlah_pesan'] . ']',
+                'errors' => [
+                    'greater_than_equal_to' => 'Jumlah diterima tidak boleh kurang dari jumlah yang sudah dikonfirmasi sebelumnya (' . $jumlahDiterimaSebelumnya . ').',
+                    'less_than_equal_to' => 'Jumlah diterima tidak boleh melebihi jumlah yang dipesan (' . $restok['jumlah_pesan'] . ').'
+                ],
             ],
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('error', $this->validator->getErrors()['jumlah_diterima']);
+            // Ambil pesan error spesifik dari validator
+            $error = $this->validator->getErrors()['jumlah_diterima'] ?? 'Input tidak valid.';
+            return redirect()->back()->withInput()->with('error', $error);
         }
 
         $jumlahDiterimaInput = (int) $this->request->getPost('jumlah_diterima');
         $this->db->transStart();
-        $jumlahDiterimaLama = (int) ($restok['jumlah_diterima'] ?? 0);
-        $stokUntukDitambah = $jumlahDiterimaInput - $jumlahDiterimaLama;
+        $stokUntukDitambah = $jumlahDiterimaInput - $jumlahDiterimaSebelumnya;
 
         $status_baru = ($jumlahDiterimaInput >= (int)$restok['jumlah_pesan']) ? 'Diterima' : 'Diterima Sebagian';
 
@@ -148,7 +156,7 @@ class RestokController extends BaseController
             'status'           => $status_baru,
         ]);
 
-        if ($stokUntukDitambah !== 0) {
+        if ($stokUntukDitambah > 0) { // Hanya tambah stok jika ada penambahan
             $this->produkModel->where('id_produk', $restok['id_produk'])->increment('stok', $stokUntukDitambah);
         }
 
@@ -276,5 +284,52 @@ class RestokController extends BaseController
         }
 
         return redirect()->to(base_url('admin/restok'))->with('error', 'Riwayat ini tidak dapat dihapus.');
+    }
+    public function exportRiwayat()
+    {
+        // 1. Ambil semua data restok secara lengkap
+        $semua_restok = $this->restokProdukModel
+            ->select('restok_produk.*, produk.nama_produk, restokers.nama_restoker')
+            ->join('produk', 'produk.id_produk = restok_produk.id_produk', 'left')
+            ->join('restokers', 'restokers.id_restoker = produk.id_restoker', 'left')
+            ->orderBy('tanggal_pesan', 'DESC') // Diurutkan berdasarkan tanggal pesan terbaru
+            ->findAll();
+
+        // 2. Siapkan file CSV untuk diunduh
+        $fileName = 'riwayat_restok_lengkap_' . date('Y-m-d') . '.csv';
+        header("Content-Description: File Transfer");
+        header("Content-Disposition: attachment; filename={$fileName}");
+        header("Content-Type: application/csv; charset=UTF-8");
+
+        $file = fopen('php://output', 'w');
+
+        // Tambahkan BOM (Byte Order Mark) untuk dukungan UTF-8 di Excel
+        fputs($file, "\xEF\xBB\xBF");
+
+        // 3. Tulis header kolom di file CSV menggunakan titik koma (;)
+        $header = ['ID Restok', 'Nama Produk', 'Supplier', 'Tanggal Pesan', 'Tanggal Diterima', 'Jumlah Pesan', 'Jumlah Diterima', 'Jumlah Retur', 'Status'];
+        fputcsv($file, $header, ';');
+
+        // 4. Tulis setiap baris data transaksi ke CSV
+        foreach ($semua_restok as $item) {
+            $rowData = [
+                $item['id_restok'],
+                $item['nama_produk'],
+                $item['nama_restoker'],
+                date('d-m-Y H:i', strtotime($item['tanggal_pesan'])),
+                $item['tanggal_diterima'] ? date('d-m-Y H:i', strtotime($item['tanggal_diterima'])) : '-',
+                $item['jumlah_pesan'],
+                $item['jumlah_diterima'] ?? 0,
+                $item['jumlah_retur'] ?? 0,
+                $item['status']
+            ];
+            fputcsv($file, $rowData, ';');
+        }
+
+        // 5. Tutup file pointer
+        fclose($file);
+
+        // Hentikan eksekusi skrip
+        exit();
     }
 }
