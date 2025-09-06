@@ -16,6 +16,17 @@
             </a>
         </div>
 
+        <?php if (session()->getFlashdata('message')): ?>
+            <div class="p-4 mb-4 ml-8 text-sm font-medium text-green-800 rounded-lg bg-green-100 border border-green-300 dark:bg-gray-800 dark:text-green-400 dark:border-green-600 shadow">
+                ✅ <?= session()->getFlashdata('message') ?>
+            </div>
+        <?php endif; ?>
+        <?php if (session()->getFlashdata('error')): ?>
+            <div class="p-4 mb-4 ml-8 text-sm font-medium text-red-800 rounded-lg bg-red-100 border border-red-300 dark:bg-gray-800 dark:text-red-400 dark:border-red-600 shadow">
+                ❌ <?= session()->getFlashdata('error') ?>
+            </div>
+        <?php endif; ?>
+
         <div class="relative overflow-x-auto shadow-xl sm:rounded-2xl mt-6 w-full max-w-6xl mx-auto ml-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <table class="w-full text-sm text-left text-gray-600 dark:text-gray-300">
                 <thead class="text-xs text-gray-700 uppercase bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 dark:text-gray-300">
@@ -69,7 +80,7 @@
                             $has_pending = in_array('Pending', $status_array);
 
                             foreach ($items as $item) {
-                                if ($item['status'] === 'Sukses') {
+                                if ($item['status'] !== 'Refund' && $item['status'] !== 'Pending') {
                                     $total_pesanan += $item['total_harga'];
                                 }
                             }
@@ -85,7 +96,7 @@
                                         <span class="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300">Pending</span>
                                     <?php elseif ($all_success): ?>
                                         <span class="px-2 py-1 text-xs font-bold rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Sukses</span>
-                                    <?php elseif ($has_refund): ?>
+                                    <?php elseif ($has_refund && !$has_pending): ?>
                                         <span class="px-2 py-1 text-xs font-bold rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">Sebagian Refund</span>
                                     <?php else: ?>
                                         <span class="px-2 py-1 text-xs font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">Full Refund</span>
@@ -105,7 +116,7 @@
             </table>
         </div>
 
-        <?php if (!empty($transaksis) && $totalPages > 1): ?>
+        <?php if (!empty($transaksis) && isset($totalPages) && $totalPages > 1): ?>
             <div class="flex justify-center mt-6 space-x-2">
                 <?php if ($currentPage > 1): ?>
                     <a href="?page=<?= $currentPage - 1 ?>" class="px-3 py-1 rounded border border-gray-600 text-gray-300 hover:bg-gray-700">‹ Prev</a>
@@ -158,8 +169,16 @@
                     </table>
                 </div>
             </div>
-            <div class="flex items-center justify-end p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
-                <a id="modal-cetak-button" href="#" target="_blank" class="text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Cetak Nota</a>
+            <div class="flex items-center justify-between p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
+                <a id="modal-hapus-semua-button" href="#"
+                    class="text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+                    onclick="return confirm('Apakah Anda yakin ingin menghapus semua item dari pesanan ini?')">
+                    Hapus Semua
+                </a>
+                <a id="modal-cetak-button" href="#" target="_blank"
+                    class="text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                    Cetak Nota
+                </a>
             </div>
         </div>
     </div>
@@ -170,12 +189,14 @@
         const modalIdPesanan = document.getElementById('modal-id-pesanan');
         const modalTableBody = document.getElementById('modal-table-body');
         const modalCetakButton = document.getElementById('modal-cetak-button');
+        const modalHapusSemuaButton = document.getElementById('modal-hapus-semua-button');
 
         // Set ID Pesanan di header modal
         modalIdPesanan.textContent = id_pesanan;
 
-        // Set link tombol cetak
+        // Set link untuk tombol-tombol
         modalCetakButton.href = `<?= base_url('admin/transaksi/cetak/') ?>${id_pesanan}`;
+        modalHapusSemuaButton.href = `<?= base_url('admin/transaksi/hapus_semua/') ?>${id_pesanan}`;
 
         // Kosongkan isi tabel sebelumnya
         modalTableBody.innerHTML = '';
@@ -189,25 +210,20 @@
                 item.status === 'Refund' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
                 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
 
-            let deleteButtonHtml = '';
-            if (item.status === 'Sukses' || item.status === 'Refund') {
-                deleteButtonHtml = `
+            let deleteButtonHtml = `
                 <a href="<?= base_url('admin/transaksi/hapus/') ?>${item.id_detail}?page=<?= $_GET['page'] ?? 1 ?>"
                    onclick="return confirm('Apakah Anda yakin ingin menghapus item ini?')"
                    class="font-medium text-red-600 dark:text-red-500 hover:underline">
                    Hapus
                 </a>`;
-            } else {
-                deleteButtonHtml = `<span class="text-gray-400 dark:text-gray-500 cursor-not-allowed">Hapus</span>`;
-            }
 
             row.innerHTML = `
-            <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">${item.nama_produk}</td>
-            <td class="px-6 py-4">${item.kuantitas}</td>
-            <td class="px-6 py-4">Rp ${Number(item.total_harga).toLocaleString('id-ID')}</td>
-            <td class="px-6 py-4"><span class="text-xs font-medium me-2 px-2.5 py-0.5 rounded ${statusClass}">${item.status}</span></td>
-            <td class="px-6 py-4">${deleteButtonHtml}</td>
-        `;
+                <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">${item.nama_produk || 'Produk Dihapus'}</td>
+                <td class="px-6 py-4">${item.kuantitas}</td>
+                <td class="px-6 py-4">Rp ${Number(item.total_harga).toLocaleString('id-ID')}</td>
+                <td class="px-6 py-4"><span class="text-xs font-medium me-2 px-2.5 py-0.5 rounded ${statusClass}">${item.status}</span></td>
+                <td class="px-6 py-4">${deleteButtonHtml}</td>
+            `;
 
             modalTableBody.appendChild(row);
         });

@@ -98,4 +98,19 @@ class TransaksiController extends BaseController
         // Hentikan eksekusi skrip
         exit();
     }
+    public function hapusSemua($id_pesanan = null)
+    {
+        if ($id_pesanan === null) {
+            return redirect()->to(base_url('admin/transaksi'))->with('error', 'ID Pesanan tidak valid.');
+        }
+
+        // Hapus semua detail pesanan yang terkait dengan id_pesanan ini
+        $this->detailPesananModel->where('id_pesanan', $id_pesanan)->delete();
+
+        // (Opsional) Anda juga bisa menghapus data pesanan utamanya jika diinginkan
+        // $this->pesananModel->delete($id_pesanan);
+
+        session()->setFlashdata('message', "Semua item untuk pesanan #{$id_pesanan} berhasil dihapus!");
+        return redirect()->to(base_url('admin/transaksi'));
+    }
 }

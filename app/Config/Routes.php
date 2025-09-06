@@ -32,6 +32,7 @@ $routes->group('admin', ['filter' => 'auth_admin'], function ($routes) {
     $routes->get('transaksi/refund/(:num)', 'TransaksiController::refund/$1');
     $routes->get('transaksi/hapus/(:num)', 'TransaksiController::hapus/$1');
     $routes->get('transaksi/cetak/(:num)', 'TransaksiController::cetak/$1');
+    $routes->get('transaksi/hapus_semua/(:num)', 'TransaksiController::hapusSemua/$1');
 
     // Rute untuk Halaman Restok & Supplier
     $routes->get('restok', 'RestokController::index');
