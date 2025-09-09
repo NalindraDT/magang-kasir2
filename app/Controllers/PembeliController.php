@@ -23,7 +23,40 @@ class PembeliController extends BaseController
 
     public function index()
     {
-        $data['produks'] = $this->produkModel->findAll();
+        // Ambil input dari URL
+        $search = $this->request->getGet('search');
+        $priceRange = $this->request->getGet('price_range');
+
+        // Mulai query builder
+        $produkBuilder = $this->produkModel;
+
+        // Terapkan filter pencarian jika ada
+        if ($search) {
+            $produkBuilder = $produkBuilder->like('nama_produk', $search);
+        }
+
+        // Terapkan filter rentang harga dari dropdown
+        if ($priceRange && $priceRange !== 'all') {
+            // Cek jika rentang memiliki batas atas (cth: '50001-above')
+            if (strpos($priceRange, '-above') > 0) {
+                $minPrice = (int) str_replace('-above', '', $priceRange);
+                $produkBuilder->where('harga >=', $minPrice);
+            } else {
+                // Untuk rentang normal (cth: '0-15000')
+                list($minPrice, $maxPrice) = explode('-', $priceRange);
+                $produkBuilder->where('harga >=', (int) $minPrice);
+                $produkBuilder->where('harga <=', (int) $maxPrice);
+            }
+        }
+
+        // Eksekusi query
+        $data['produks'] = $produkBuilder->findAll();
+        
+        // Teruskan nilai filter ke view
+        $data['search'] = $search;
+        $data['priceRange'] = $priceRange;
+
+        // Ambil data keranjang seperti biasa
         $id_pesanan = session()->get('id_pesanan');
         $data['keranjang'] = [];
         if ($id_pesanan) {
@@ -170,7 +203,12 @@ class PembeliController extends BaseController
 
     public function updateCart($id_detail)
     {
-        $newKuantitas = $this->request->getPost('kuantitas');
+        $newKuantitas = $this->request->getGet('kuantitas');
+
+        // Jika kuantitas kurang dari 1, hapus item dari keranjang
+        if ($newKuantitas < 1) {
+            return $this->removeFromCart($id_detail);
+        }
 
         // Ambil data item keranjang yang lama
         $itemLama = $this->detailPesananModel->find($id_detail);

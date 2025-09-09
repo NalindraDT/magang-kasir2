@@ -13,7 +13,18 @@
                 </div>
                 <div class="text-right">
                     <p class="font-bold text-gray-800 dark:text-white">Rp <?= number_format($item['total_harga'], 0, ',', '.') ?></p>
-                    <a href="<?= base_url('pembeli/removeFromCart/' . $item['id_detail']) ?>" class="text-xs text-red-500 hover:underline" onclick="return confirm('Apakah Anda yakin ingin Refund item ini?')">Refund</a>
+                    <div class="flex items-center justify-end space-x-2 mt-1">
+                        <a href="<?= base_url('pembeli/updateCart/' . $item['id_detail']) ?>?kuantitas=<?= $item['kuantitas'] - 1 ?>" class="text-red-500 hover:text-red-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        <a href="<?= base_url('pembeli/updateCart/' . $item['id_detail']) ?>?kuantitas=<?= $item['kuantitas'] + 1 ?>" class="text-green-500 hover:text-green-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                    </div>
                 </div>
             </div>
             <?php $grandTotal += $item['total_harga']; ?>

@@ -8,10 +8,41 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
         <div class="lg:col-span-2">
-            <h1 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Daftar Produk</h1>
+            <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Daftar Produk</h1>
+            
+            <form action="<?= base_url('pembeli') ?>" method="get" id="filter-form" class="mb-8 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div class="relative md:col-span-1">
+                        <label for="search" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cari Produk</label>
+                        <input type="text" name="search" id="search" value="<?= esc($search ?? '') ?>" placeholder="Nama produk..." 
+                               class="w-full pl-4 pr-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div class="md:col-span-1">
+                        <label for="price_range" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga</label>
+                        <select name="price_range" id="price_range"
+                                class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all" <?= ($priceRange ?? 'all') === 'all' ? 'selected' : '' ?>>Semua Harga</option>
+                            <option value="0-15000" <?= ($priceRange ?? '') === '0-15000' ? 'selected' : '' ?>>Rp 0 - Rp 15.000</option>
+                            <option value="15001-50000" <?= ($priceRange ?? '') === '15001-50000' ? 'selected' : '' ?>>Rp 15.001 - Rp 50.000</option>
+                            <option value="50001-100000" <?= ($priceRange ?? '') === '50001-100000' ? 'selected' : '' ?>>Rp 50.001 - Rp 100.000</option>
+                            <option value="100001-above" <?= ($priceRange ?? '') === '100001-above' ? 'selected' : '' ?>>Diatas Rp 100.000</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-1 flex items-center gap-2">
+                        <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Terapkan</button>
+                        <a href="<?= base_url('pembeli') ?>" class="w-full px-4 py-2 bg-gray-600 text-white text-center rounded-lg hover:bg-gray-700">Reset</a>
+                    </div>
+                </div>
+            </form>
+
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 <?php if (empty($produks)): ?>
-                    <div class="col-span-full text-center text-gray-500 dark:text-gray-400">Tidak ada produk yang tersedia.</div>
+                    <div class="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
+                        <p class="text-lg">Produk tidak ditemukan.</p>
+                        <a href="<?= base_url('pembeli') ?>" class="text-blue-500 hover:underline mt-2 inline-block">Reset filter</a>
+                    </div>
                 <?php else: ?>
                     <?php foreach ($produks as $produk): ?>
                         <div class="product-card bg-white dark:bg-gray-800 rounded-lg shadow-md flex flex-col justify-between overflow-hidden cursor-pointer 
