@@ -5,20 +5,23 @@ namespace App\Controllers;
 use App\Models\ProdukModel;
 use App\Models\PesananModel;
 use App\Models\DetailPesananModel;
+use App\Models\KategoriModel; // TAMBAHKAN INI
 
 class PembeliController extends BaseController
 {
     protected $produkModel;
     protected $pesananModel;
     protected $detailPesananModel;
-    protected $db; // Tambahkan properti ini
+    protected $kategoriModel; // TAMBAHKAN INI
+    protected $db;
 
     public function __construct()
     {
         $this->produkModel = new ProdukModel();
         $this->pesananModel = new PesananModel();
         $this->detailPesananModel = new DetailPesananModel();
-        $this->db = \Config\Database::connect(); // Inisialisasi koneksi database
+        $this->kategoriModel = new KategoriModel(); // TAMBAHKAN INI
+        $this->db = \Config\Database::connect();
     }
 
     public function index()
@@ -26,6 +29,7 @@ class PembeliController extends BaseController
         // Ambil input dari URL
         $search = $this->request->getGet('search');
         $priceRange = $this->request->getGet('price_range');
+        $kategoriId = $this->request->getGet('kategori'); // TAMBAHKAN INI
 
         // Mulai query builder
         $produkBuilder = $this->produkModel;
@@ -35,14 +39,17 @@ class PembeliController extends BaseController
             $produkBuilder = $produkBuilder->like('nama_produk', $search);
         }
 
+        // TAMBAHKAN BLOK FILTER KATEGORI
+        if ($kategoriId && $kategoriId !== 'all') {
+            $produkBuilder->where('id_kategori', $kategoriId);
+        }
+
         // Terapkan filter rentang harga dari dropdown
         if ($priceRange && $priceRange !== 'all') {
-            // Cek jika rentang memiliki batas atas (cth: '50001-above')
             if (strpos($priceRange, '-above') > 0) {
                 $minPrice = (int) str_replace('-above', '', $priceRange);
                 $produkBuilder->where('harga >=', $minPrice);
             } else {
-                // Untuk rentang normal (cth: '0-15000')
                 list($minPrice, $maxPrice) = explode('-', $priceRange);
                 $produkBuilder->where('harga >=', (int) $minPrice);
                 $produkBuilder->where('harga <=', (int) $maxPrice);
@@ -51,10 +58,14 @@ class PembeliController extends BaseController
 
         // Eksekusi query
         $data['produks'] = $produkBuilder->findAll();
-        
+
         // Teruskan nilai filter ke view
         $data['search'] = $search;
         $data['priceRange'] = $priceRange;
+        $data['kategoriId'] = $kategoriId; // TAMBAHKAN INI
+
+        // Ambil daftar kategori untuk dropdown filter
+        $data['kategori_list'] = $this->kategoriModel->findAll(); // TAMBAHKAN INI
 
         // Ambil data keranjang seperti biasa
         $id_pesanan = session()->get('id_pesanan');
@@ -74,7 +85,7 @@ class PembeliController extends BaseController
         if (!$this->request->isAJAX()) {
             return $this->response->setStatusCode(403, 'Forbidden');
         }
-        
+
         $id_produk = $this->request->getPost('id_produk');
         $produk = $this->produkModel->find($id_produk);
 
@@ -96,7 +107,7 @@ class PembeliController extends BaseController
             ->where('id_produk', $id_produk)
             ->where('status !=', 'Refund')
             ->first();
-        
+
         $this->db->transStart();
 
         if ($item_keranjang) {
@@ -118,25 +129,25 @@ class PembeliController extends BaseController
                 'status' => 'Pending'
             ]);
         }
-        
+
         // Kurangi stok produk
         $this->produkModel->update($id_produk, ['stok' => $produk['stok'] - 1]);
-        
+
         // Update total bayar
         $total_bayar = $this->detailPesananModel->where('id_pesanan', $id_pesanan)->where('status !=', 'Refund')->selectSum('total_harga')->first()['total_harga'] ?? 0;
         $this->pesananModel->update($id_pesanan, ['total_bayar' => $total_bayar]);
 
         $this->db->transComplete();
-        
+
         if ($this->db->transStatus() === false) {
-             return $this->response->setJSON(['status' => 'error', 'message' => 'Gagal menambahkan ke keranjang.']);
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Gagal menambahkan ke keranjang.']);
         }
 
         // Kirim kembali HTML keranjang yang sudah di-render
         $data['keranjang'] = $this->detailPesananModel
-                ->where('id_pesanan', $id_pesanan)
-                ->where('status !=', 'Refund')
-                ->findAll();
+            ->where('id_pesanan', $id_pesanan)
+            ->where('status !=', 'Refund')
+            ->findAll();
 
         return $this->response->setJSON([
             'status' => 'success',
@@ -144,7 +155,7 @@ class PembeliController extends BaseController
             'cart_html' => view('pembeli/_keranjang', $data)
         ]);
     }
-    
+
     // Metode lain di bawah sini (removeFromCart, cetakNota, dll.) tetap sama
     // ...
     public function removeFromCart($id_detail)

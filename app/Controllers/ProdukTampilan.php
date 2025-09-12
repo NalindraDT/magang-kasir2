@@ -4,23 +4,30 @@ namespace App\Controllers;
 
 use App\Models\ProdukModel;
 use App\Models\RestokerModel;
+use App\Models\KategoriModel; // TAMBAHKAN INI
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ProdukTampilan extends BaseController
 {
     protected $produkModel;
-    protected $restokerModel; // TAMBAHKAN INI
+    protected $restokerModel;
+    protected $kategoriModel; // TAMBAHKAN INI
 
     public function __construct()
     {
         $this->produkModel = new ProdukModel();
-        $this->restokerModel = new RestokerModel(); // TAMBAHKAN INI
+        $this->restokerModel = new RestokerModel();
+        $this->kategoriModel = new KategoriModel(); // TAMBAHKAN INI
     }
 
     public function index()
     {
         // Ambil semua data produk dari model
-        $data['produks'] = $this->produkModel->findAll();
+        // Kita akan lakukan JOIN untuk mengambil nama kategori
+        $data['produks'] = $this->produkModel
+            ->select('produk.*, kategori.nama_kategori')
+            ->join('kategori', 'kategori.id_kategori = produk.id_kategori', 'left')
+            ->findAll();
 
         // Kirim data ke view untuk ditampilkan
         return view('produk/produk', $data);
@@ -30,6 +37,8 @@ class ProdukTampilan extends BaseController
     {
         // Ambil data restoker untuk dropdown
         $data['restokers'] = $this->restokerModel->findAll();
+        // Ambil data kategori untuk dropdown
+        $data['kategori'] = $this->kategoriModel->findAll(); // TAMBAHKAN INI
         return view('produk/produk_view_form', $data);
     }
 
@@ -41,6 +50,7 @@ class ProdukTampilan extends BaseController
             'harga' => 'required|numeric|greater_than_equal_to[0]',
             'stok' => 'required|integer|greater_than_equal_to[0]',
             'id_restoker' => 'required|integer',
+            'id_kategori' => 'required|integer', // TAMBAHKAN VALIDASI INI
             'gambar_produk' => [
                 'rules' => 'uploaded[gambar_produk]|max_size[gambar_produk,1024]|is_image[gambar_produk]|mime_in[gambar_produk,image/jpg,image/jpeg,image/png]',
                 'errors' => [
@@ -70,6 +80,7 @@ class ProdukTampilan extends BaseController
             'harga' => $this->request->getPost('harga'),
             'stok' => $this->request->getPost('stok'),
             'id_restoker' => $this->request->getPost('id_restoker'),
+            'id_kategori' => $this->request->getPost('id_kategori'), // TAMBAHKAN INI
             'gambar_produk' => $namaGambar, // Simpan nama file gambar
         ];
 
@@ -89,8 +100,9 @@ class ProdukTampilan extends BaseController
             throw new \CodeIgniter\Exceptions\PageNotFoundException('Produk tidak ditemukan.');
         }
 
-        // Ambil juga data restoker untuk dropdown
+        // Ambil juga data restoker dan kategori untuk dropdown
         $data['restokers'] = $this->restokerModel->findAll();
+        $data['kategori'] = $this->kategoriModel->findAll(); // TAMBAHKAN INI
 
         return view('produk/produk_view_form', $data);
     }
@@ -106,6 +118,7 @@ class ProdukTampilan extends BaseController
             'harga' => 'required|numeric|greater_than_equal_to[0]',
             'stok' => 'required|integer|greater_than_equal_to[0]',
             'id_restoker' => 'required|integer',
+            'id_kategori' => 'required|integer', // TAMBAHKAN VALIDASI INI
             'gambar_produk' => [
                 'rules' => 'max_size[gambar_produk,1024]|is_image[gambar_produk]|mime_in[gambar_produk,image/jpg,image/jpeg,image/png]',
                 'errors' => [
@@ -126,6 +139,7 @@ class ProdukTampilan extends BaseController
             'harga' => $this->request->getPost('harga'),
             'stok' => $this->request->getPost('stok'),
             'id_restoker' => $this->request->getPost('id_restoker'),
+            'id_kategori' => $this->request->getPost('id_kategori'), // TAMBAHKAN INI
         ];
 
         // Cek apakah ada file gambar yang diunggah

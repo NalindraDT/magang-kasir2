@@ -44,7 +44,7 @@
                         <th scope="col" class="px-6 py-4">No</th>
                         <th scope="col" class="px-6 py-4">Gambar</th>
                         <th scope="col" class="px-6 py-4">Nama Produk</th>
-                        <th scope="col" class="px-6 py-4">Harga</th>
+                        <th scope="col" class="px-6 py-4">Kategori</th> <th scope="col" class="px-6 py-4">Harga</th>
                         <th scope="col" class="px-6 py-4">Stok</th>
                         <th scope="col" class="px-6 py-4 text-center">Aksi</th>
                     </tr>
@@ -52,8 +52,7 @@
                 <tbody id="produk-table-body">
                     <?php if (empty($produks)): ?>
                         <tr>
-                            <td colspan="5" class="px-6 py-6 text-center text-gray-500 dark:text-gray-400 italic">
-                                Belum ada produk 📂
+                            <td colspan="7" class="px-6 py-6 text-center text-gray-500 dark:text-gray-400 italic"> Belum ada produk 📂
                             </td>
                         </tr>
                     <?php else: ?>
@@ -65,7 +64,7 @@
                                     <img src="<?= base_url('uploads/produk/' . $produk['gambar_produk']) ?>" alt="<?= $produk['nama_produk'] ?>" class="w-16 h-16 object-cover rounded-lg">
                                 </td>
                                 <td class="px-6 py-4"><?= $produk['nama_produk'] ?></td>
-                                <td class="px-6 py-4 font-medium">Rp <?= number_format($produk['harga'], 0, ',', '.') ?></td>
+                                <td class="px-6 py-4"><?= esc($produk['nama_kategori'] ?? 'Tidak ada kategori') ?></td> <td class="px-6 py-4 font-medium">Rp <?= number_format($produk['harga'], 0, ',', '.') ?></td>
                                 <td class="px-6 py-4">
                                     <?php if ($produk['stok'] > 10): ?>
                                         <span class="px-2 py-1 text-xs font-bold rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">

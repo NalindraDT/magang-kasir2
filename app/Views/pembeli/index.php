@@ -11,13 +11,25 @@
             <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Daftar Produk</h1>
             
             <form action="<?= base_url('pembeli') ?>" method="get" id="filter-form" class="mb-8 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div class="relative md:col-span-1">
                         <label for="search" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cari Produk</label>
                         <input type="text" name="search" id="search" value="<?= esc($search ?? '') ?>" placeholder="Nama produk..." 
                                class="w-full pl-4 pr-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
 
+                    <div class="md:col-span-1">
+                        <label for="kategori" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Kategori</label>
+                        <select name="kategori" id="kategori"
+                                class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">Semua Kategori</option>
+                            <?php foreach($kategori_list as $kat): ?>
+                                <option value="<?= $kat['id_kategori'] ?>" <?= ($kategoriId ?? 'all') == $kat['id_kategori'] ? 'selected' : '' ?>>
+                                    <?= esc($kat['nama_kategori']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                     <div class="md:col-span-1">
                         <label for="price_range" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga</label>
                         <select name="price_range" id="price_range"

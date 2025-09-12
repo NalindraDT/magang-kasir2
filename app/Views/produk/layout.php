@@ -13,6 +13,30 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+
+        /* == CSS ANIMASI DROPDOWN BARU == */
+        #dropdown-stok {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 0;
+            opacity: 0;
+        }
+
+        #dropdown-stok:not(.hidden) {
+            max-height: 500px;
+            /* Atur nilai yang cukup besar */
+            opacity: 1;
+        }
+
+        [data-collapse-toggle="dropdown-stok"][aria-expanded="true"] svg:last-child {
+            transform: rotate(180deg);
+        }
+
+        [data-collapse-toggle="dropdown-stok"] svg:last-child {
+            transition: transform 0.3s ease-out;
+        }
+
+        /* ============================== */
     </style>
 </head>
 
@@ -66,7 +90,6 @@
         </div>
     </nav>
 
-    <!-- Sidebar -->
     <aside id="default-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full bg-white border-r border-gray-200 sm:translate-x-0 dark:bg-gray-800 dark:border-gray-700" aria-label="Sidebar">
         <div class="h-full px-3 pb-4 overflow-y-auto bg-white dark:bg-gray-800">
             <ul class="space-y-2 font-medium">
@@ -88,6 +111,14 @@
                     </a>
                 </li>
                 <li>
+                    <a href="<?= base_url('admin/kategori') ?>" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                        <svg class="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 11V5h2v6H9zm1 4a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
+                        <span class="flex-1 ms-3 whitespace-nowrap">Kategori</span>
+                    </a>
+                </li>
+                <li>
                     <a href="<?= base_url('admin/transaksi') ?>" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                         <svg class="shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                             <path d="m17.418 3.623-.018-.008a6.713 6.713 0 0 0-2.4-.569V2h1a1 1 0 1 0 0-2h-2a1 1 0 0 0-1 1v2H9.89A6.977 6.977 0 0 1 12 8v5h-2V8A5 5 0 1 0 0 8v6a1 1 0 0 0 1 1h8v4a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-4h6a1 1 0 0 0 1-1V8a5 5 0 0 0-2.582-4.377ZM6 12H4a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2Z" />
@@ -96,7 +127,15 @@
                     </a>
                 </li>
                 <li>
-                    <button type="button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" aria-controls="dropdown-stok" data-collapse-toggle="dropdown-stok">
+                    <a href="<?= base_url('admin/laporan') ?>" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                        <svg class="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
+                        </svg>
+                        <span class="flex-1 ms-3 whitespace-nowrap">Laporan</span>
+                    </a>
+                </li>
+                <li>
+                    <button type="button" id="stok-toggle-button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" aria-controls="dropdown-stok" data-collapse-toggle="dropdown-stok">
                         <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
                             <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h16v3H4V6zm0 5h16v7H4v-7z" clip-rule="evenodd" />
                         </svg>
@@ -134,6 +173,18 @@
         sidebarToggle.addEventListener('click', () => {
             sidebar.classList.toggle('-translate-x-full');
         });
+
+        // == JAVASCRIPT ANIMASI DROPDOWN BARU ==
+        // Menambahkan event listener ke tombol dropdown Stok
+        const stokToggleButton = document.getElementById('stok-toggle-button');
+        if (stokToggleButton) {
+            stokToggleButton.addEventListener('click', function() {
+                // Toggle atribut aria-expanded untuk CSS
+                const isExpanded = this.getAttribute('aria-expanded') === 'true';
+                this.setAttribute('aria-expanded', !isExpanded);
+            });
+        }
+        // =====================================
     </script>
     <?= $this->renderSection('scripts') ?>
 </body>

@@ -48,8 +48,15 @@ $routes->group('admin', ['filter' => 'auth_admin'], function ($routes) {
     $routes->post('restok/supplier/create', 'RestokController::supplierCreate');
     $routes->post('restok/supplier/update/(:num)', 'RestokController::supplierUpdate/$1');
     $routes->get('restok/supplier/delete/(:num)', 'RestokController::supplierDelete/$1');
-
     $routes->get('restok/delete/(:num)', 'RestokController::deleteRestockHistory/$1');
+
+    // Rute baru untuk CRUD Kategori
+    $routes->get('kategori', 'KategoriController::index');
+    $routes->post('kategori/create', 'KategoriController::create');
+    $routes->post('kategori/update/(:num)', 'KategoriController::update/$1');
+    $routes->get('kategori/delete/(:num)', 'KategoriController::delete/$1');
+
+    $routes->get('laporan', 'LaporanController::index');
 });
 
 // Pindahkan rute login dan logout keluar dari grup admin
