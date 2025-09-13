@@ -1,0 +1,208 @@
+<?php
+
+namespace App\Controllers;
+
+use CodeIgniter\Controller;
+use DateTime;
+
+class WhatsappAnalyzer extends BaseController
+{
+    public function index()
+    {
+        // Menampilkan halaman form untuk upload file
+        return view('whatsapp_analyzer/index');
+    }
+
+    public function kirimPesan()
+    {
+        $nomorTujuan = $this->request->getPost('nomor_tujuan');
+
+        // Ambil kredensial dari file .env
+        $token = getenv('whatsapp.token');
+        $phoneId = getenv('whatsapp.phone_number_id');
+
+        // Validasi sederhana
+        if (empty($nomorTujuan) || empty($token) || empty($phoneId)) {
+            return redirect()->back()->with('error', 'Nomor tujuan atau kredensial API belum diatur.');
+        }
+
+        // Siapkan data untuk dikirim ke API
+        $url = "https://graph.facebook.com/v19.0/{$phoneId}/messages";
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'to' => $nomorTujuan,
+            'type' => 'template',
+            'template' => [
+                'name' => 'hello_world', // Menggunakan template default
+                'language' => [
+                    'code' => 'en_US'
+                ]
+            ]
+        ];
+
+        // Gunakan HTTP Client bawaan CodeIgniter
+        $client = \Config\Services::curlrequest();
+
+        try {
+            $response = $client->post($url, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token,
+                    'Content-Type' => 'application/json'
+                ],
+                'json' => $payload
+            ]);
+
+            $body = json_decode($response->getBody());
+
+            if ($response->getStatusCode() === 200 && isset($body->messages[0]->id)) {
+                return redirect()->back()->with('message', 'Pesan tes berhasil dikirim!');
+            } else {
+                $errorMessage = $body->error->message ?? 'Terjadi kesalahan yang tidak diketahui.';
+                return redirect()->back()->with('error', 'Gagal mengirim pesan: ' . $errorMessage);
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Exception: ' . $e->getMessage());
+        }
+    }
+    public function proses()
+    {
+        // 1. Validasi File Upload
+        $validationRule = [
+            'chatfile' => [
+                'label' => 'Chat File',
+                'rules' => 'uploaded[chatfile]|ext_in[chatfile,txt]',
+            ],
+            'kontakfile' => [
+                'label' => 'Kontak CSV',
+                'rules' => 'uploaded[kontakfile]|ext_in[kontakfile,csv]',
+            ],
+        ];
+
+        if (!$this->validate($validationRule)) {
+            return redirect()->back()->withInput()->with('error', $this->validator->getErrors()['chatfile'] ?? $this->validator->getErrors()['kontakfile']);
+        }
+
+        $chatFile = $this->request->getFile('chatfile');
+        $kontakFile = $this->request->getFile('kontakfile');
+        $namaAnda = $this->request->getPost('nama_anda');
+
+        // 2. Baca File Kontak (kontak.csv)
+        $kontakData = [];
+        if ($kontakFile->isValid() && !$kontakFile->hasMoved()) {
+            $file = fopen($kontakFile->getTempName(), 'r');
+            // Lewati header
+            fgetcsv($file);
+            while (($line = fgetcsv($file)) !== FALSE) {
+                // Asumsi format: Nama,NomorHP
+                if (isset($line[0]) && isset($line[1])) {
+                    $kontakData[trim($line[0])] = trim($line[1]);
+                }
+            }
+            fclose($file);
+        }
+
+        // 3. Proses File Chat (.txt)
+        $hasilAnalisis = [];
+        $waktuPesanTerakhir = [];
+
+        $fileHandle = fopen($chatFile->getTempName(), "r");
+        if ($fileHandle) {
+            while (($baris = fgets($fileHandle)) !== false) {
+                // Pola Regex untuk format: DD/MM/YY HH.MM - Nama: Pesan
+                if (preg_match('/(\d{2}\/\d{2}\/\d{2,4}) (\d{2}\.\d{2}) - (.*?): (.*)/', $baris, $cocok)) {
+                    $tanggalStr = $cocok[1];
+                    $waktuStr = str_replace('.', ':', $cocok[2]);
+                    $pengirim = trim($cocok[3]);
+
+                    $waktuPenuh = DateTime::createFromFormat('d/m/y H:i', "$tanggalStr $waktuStr");
+                    if (!$waktuPenuh) {
+                        $waktuPenuh = DateTime::createFromFormat('d/m/Y H:i', "$tanggalStr $waktuStr");
+                    }
+                    if (!$waktuPenuh) continue;
+
+                    // Jika pengirim BUKAN Anda
+                    if ($pengirim != $namaAnda) {
+                        // Jika ada pesan dari Anda sebelumnya, hitung respons pelanggan
+                        if (isset($waktuPesanTerakhir[$namaAnda])) {
+                            $selisihDetik = $waktuPenuh->getTimestamp() - $waktuPesanTerakhir[$namaAnda]->getTimestamp();
+                            $hasilAnalisis[] = [
+                                'Waktu Kejadian' => $waktuPenuh,
+                                'Tipe Respons' => "$pengirim -> $namaAnda",
+                                'Nama' => $pengirim,
+                                'Waktu Respons (Detik)' => $selisihDetik,
+                            ];
+                            unset($waktuPesanTerakhir[$namaAnda]);
+                        }
+                        $waktuPesanTerakhir[$pengirim] = $waktuPenuh;
+                    }
+                    // Jika pengirim adalah ANDA
+                    else {
+                        // Cek setiap pelanggan yang menunggu balasan
+                        foreach ($waktuPesanTerakhir as $namaPelanggan => $waktuPesan) {
+                            if ($namaPelanggan != $namaAnda) {
+                                $selisihDetik = $waktuPenuh->getTimestamp() - $waktuPesan->getTimestamp();
+                                $hasilAnalisis[] = [
+                                    'Waktu Kejadian' => $waktuPenuh,
+                                    'Tipe Respons' => "$namaAnda -> $namaPelanggan",
+                                    'Nama' => $namaPelanggan,
+                                    'Waktu Respons (Detik)' => $selisihDetik,
+                                ];
+                            }
+                        }
+                        // Kosongkan semua antrian pelanggan & set waktu terakhir Anda
+                        $waktuPesanTerakhir = [$namaAnda => $waktuPenuh];
+                    }
+                }
+            }
+            fclose($fileHandle);
+        }
+
+        // Urutkan hasil berdasarkan Waktu Kejadian
+        usort($hasilAnalisis, function ($a, $b) {
+            return $a['Waktu Kejadian'] <=> $b['Waktu Kejadian'];
+        });
+
+        $data['rincian'] = $hasilAnalisis;
+        $data['ringkasan'] = $this->buatRingkasan($hasilAnalisis, $kontakData);
+
+        return view('whatsapp_analyzer/hasil', $data);
+    }
+
+    private function buatRingkasan($rincian, $kontakData)
+    {
+        if (empty($rincian)) return [];
+
+        $ringkasan = [];
+        foreach ($rincian as $item) {
+            $tipe = $item['Tipe Respons'];
+            if (!isset($ringkasan[$tipe])) {
+                $ringkasan[$tipe] = ['total_detik' => 0, 'jumlah' => 0, 'nama' => $item['Nama']];
+            }
+            $ringkasan[$tipe]['total_detik'] += $item['Waktu Respons (Detik)'];
+            $ringkasan[$tipe]['jumlah']++;
+        }
+
+        $hasilAkhir = [];
+        foreach ($ringkasan as $tipe => $data) {
+            $rataRataDetik = $data['total_detik'] / $data['jumlah'];
+            $nomorHp = $kontakData[$data['nama']] ?? '-';
+
+            $hasilAkhir[] = [
+                'Tipe Respons' => $tipe,
+                'NomorHP' => $nomorHp,
+                'Rata-rata Respons (Detik)' => round($rataRataDetik),
+                'Rata-rata Respons (JJ:MM:DD)' => $this->formatDetikKeHms($rataRataDetik),
+            ];
+        }
+        return $hasilAkhir;
+    }
+
+    private function formatDetikKeHms($totalDetik)
+    {
+        $jam = floor($totalDetik / 3600);
+        $sisaDetik = $totalDetik % 3600;
+        $menit = floor($sisaDetik / 60);
+        $detik = $sisaDetik % 60;
+        return sprintf('%02d:%02d:%02d', $jam, $menit, $detik);
+    }
+}

@@ -9,7 +9,7 @@ $routes->get('/', 'Home::index');
 
 $routes->get('auth/register', 'Auth::register');
 $routes->post('auth/register/create', 'Auth::create');
-
+$routes->match(['GET', 'POST'], 'webhook/whatsapp', 'WebhookController::index');
 // Kelompokkan semua rute admin dan terapkan filter
 $routes->group('admin', ['filter' => 'auth_admin'], function ($routes) {
     // Rute untuk Halaman Admin (dashboard)
@@ -57,6 +57,10 @@ $routes->group('admin', ['filter' => 'auth_admin'], function ($routes) {
     $routes->get('kategori/delete/(:num)', 'KategoriController::delete/$1');
 
     $routes->get('laporan', 'LaporanController::index');
+
+    $routes->get('whatsapp-analyzer', 'WhatsappAnalyzer::index');
+    $routes->post('whatsapp-analyzer/proses', 'WhatsappAnalyzer::proses');
+    $routes->post('whatsapp-analyzer/kirim', 'WhatsappAnalyzer::kirimPesan');
 });
 
 // Pindahkan rute login dan logout keluar dari grup admin
