@@ -56,37 +56,23 @@ class WhatsappAnalyzer extends BaseController
             if ($response->getStatusCode() === 200 && isset($body['messages'][0]['id'])) {
                 $outgoingTimestamp = time();
 
-                // ---- LOGIKA BARU DIMULAI DI SINI ----
-
-                // 1. Simpan pesan keluar ke database
-                $messageModel = new WhatsappMessageModel();
+                // Simpan pesan keluar ke database
+                $messageModel = new \App\Models\WhatsappMessageModel();
                 $messageModel->save([
                     'message_id'        => $body['messages'][0]['id'],
-                    'sender_number'     => $phoneId,
-                    'recipient_number'  => $nomorTujuan,
+                    'sender_number'     => $phoneId, // Ini nomor bisnis Anda
+                    'recipient_number'  => $nomorTujuan, // Ini nomor pelanggan
                     'message_text'      => 'Template: Hello World',
                     'message_timestamp' => $outgoingTimestamp,
-                    'direction'         => 'out', // Tandai sebagai pesan KELUAR
-                    'conversation_id'   => $nomorTujuan,
+                    'direction'         => 'out',
+                    'conversation_id'   => $nomorTujuan, // ID percakapan adalah nomor pelanggan
                     'status'            => 'sent'
                 ]);
 
-                // 2. Cek percakapan sebelumnya untuk menghitung waktu respons operator
-                $conversationModel = new ConversationModel();
+                // Update atau buat data percakapan baru
+                $conversationModel = new \App\Models\ConversationModel();
                 $conversation = $conversationModel->where('client_number', $nomorTujuan)->first();
 
-                if ($conversation && $conversation['last_message_direction'] === 'in') {
-                    $responseTime = $outgoingTimestamp - (int)$conversation['last_message_timestamp'];
-
-                    $responseTimeModel = new ResponseTimeModel();
-                    $responseTimeModel->save([
-                        'conversation_id'       => $nomorTujuan,
-                        'response_time_seconds' => $responseTime,
-                        'response_direction'    => 'operator_to_client'
-                    ]);
-                }
-
-                // 3. Update atau buat data percakapan baru
                 $convoData = [
                     'client_number'            => $nomorTujuan,
                     'last_message_timestamp'   => $outgoingTimestamp,
@@ -98,8 +84,6 @@ class WhatsappAnalyzer extends BaseController
                 } else {
                     $conversationModel->insert($convoData);
                 }
-
-                // ---- AKHIR LOGIKA BARU ----
 
                 return redirect()->back()->with('message', 'Pesan tes berhasil dikirim dan dicatat!');
             } else {

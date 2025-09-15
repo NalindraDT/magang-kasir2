@@ -11,80 +11,71 @@ class WebhookController extends Controller
 {
     public function index()
     {
-        // Tangani Verifikasi Webhook (hanya untuk metode GET)
+        // Bagian verifikasi GET untuk Meta
         if ($this->request->getMethod() === 'get') {
             $verifyToken = getenv('whatsapp.verify_token');
-            
             $mode = $this->request->getGet('hub.mode');
             $token = $this->request->getGet('hub.verify_token');
             $challenge = $this->request->getGet('hub.challenge');
 
             if ($mode === 'subscribe' && $token === $verifyToken) {
-                // Bersihkan semua output buffer yang mungkin aktif
-                while (ob_get_level() > 0) {
-                    ob_end_clean();
-                }
-                
-                // Kirim header HTTP secara manual untuk memastikan
-                header('HTTP/1.1 200 OK');
-                header('Content-Type: text/plain');
-                
-                // Cetak challenge dan hentikan eksekusi
-                echo $challenge;
-                exit();
+                return $this->response->setStatusCode(200)->setContentType('text/plain')->setBody($challenge);
             } else {
-                $this->response->setStatusCode(403)->send();
-                exit();
+                return $this->response->setStatusCode(403);
             }
         }
 
-        // Tangani Pesan Masuk (hanya untuk metode POST)
+        // Penanganan POST saat ada pesan masuk
         if ($this->request->getMethod() === 'post') {
             $body = $this->request->getJSON(true);
-            log_message('info', 'Pesan masuk diterima: ' . json_encode($body));
 
+            // Cek apakah ini notifikasi pesan masuk
             if (isset($body['entry'][0]['changes'][0]['value']['messages'][0])) {
                 $messageData = $body['entry'][0]['changes'][0]['value']['messages'][0];
-                
-                $messageModel = new WhatsappMessageModel();
-                $messageModel->save([
-                    'message_id'        => $messageData['id'],
-                    'sender_number'     => $messageData['from'],
-                    'message_text'      => $messageData['text']['body'] ?? 'Pesan bukan teks',
-                    'message_timestamp' => $messageData['timestamp'],
-                    'direction'         => 'in',
-                    'conversation_id'   => $messageData['from']
-                ]);
+                $clientNumber = $messageData['from'];
 
-                $conversationModel = new ConversationModel();
-                $conversation = $conversationModel->where('client_number', $messageData['from'])->first();
-
-                if ($conversation && $conversation['last_message_direction'] === 'out') {
-                    $responseTime = (int)$messageData['timestamp'] - (int)$conversation['last_message_timestamp'];
-
-                    $responseTimeModel = new ResponseTimeModel();
-                    $responseTimeModel->save([
-                        'conversation_id'       => $messageData['from'],
-                        'response_time_seconds' => $responseTime,
-                        'response_direction'    => 'client_to_operator'
+                try {
+                    $messageModel = new WhatsappMessageModel();
+                    
+                    // 1. Simpan pesan masuk ke database
+                    $messageModel->save([
+                        'message_id'        => $messageData['id'],
+                        'sender_number'     => $clientNumber,
+                        'message_text'      => $messageData['text']['body'] ?? 'Pesan bukan teks',
+                        'message_timestamp' => $messageData['timestamp'],
+                        'direction'         => 'in',
+                        'conversation_id'   => $clientNumber
                     ]);
-                }
+                    
+                    // 2. Logika untuk menghitung waktu respons
+                    $conversationModel = new ConversationModel();
+                    $conversation = $conversationModel->where('client_number', $clientNumber)->first();
 
-                $convoData = [
-                    'client_number'            => $messageData['from'],
-                    'last_message_timestamp'   => $messageData['timestamp'],
-                    'last_message_direction'   => 'in'
-                ];
+                    if ($conversation && $conversation['last_message_direction'] === 'out') {
+                        $responseTime = (int)$messageData['timestamp'] - (int)$conversation['last_message_timestamp'];
+                        $responseTimeModel = new ResponseTimeModel();
+                        $responseTimeModel->save([
+                            'conversation_id'       => $clientNumber,
+                            'response_time_seconds' => $responseTime,
+                            'response_direction'    => 'client_to_operator'
+                        ]);
+                    }
+                    
+                    // 3. Update status percakapan
+                    $convoData = ['last_message_timestamp' => $messageData['timestamp'], 'last_message_direction' => 'in'];
+                    if ($conversation) {
+                        $conversationModel->update($conversation['id'], $convoData);
+                    } else {
+                        $conversationModel->insert(['client_number' => $clientNumber] + $convoData);
+                    }
 
-                if ($conversation) {
-                    $conversationModel->update($conversation['id'], $convoData);
-                } else {
-                    $conversationModel->insert($convoData);
+                } catch (\Exception $e) {
+                    log_message('error', '[Webhook DB Error] ' . $e->getMessage());
+                    return $this->response->setStatusCode(500);
                 }
             }
-
-            $this->response->setStatusCode(200)->send();
-            exit();
+            
+            return $this->response->setStatusCode(200);
         }
     }
 }
