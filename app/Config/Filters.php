@@ -74,11 +74,14 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             'cors',
-        //     'csrf' => [
-        //     'except' => ['webhook/whatsapp1', 'api/*'] // Tambahkan URL webhook Anda di sini
-        // ],
+            'csrf' => [
+                'except' => [
+                    'webhook/whatsapp1', // URI webhook WA
+                    'doku/callback',     // URI callback Doku
+                    'api/*'              // URI untuk API jika ada
+                ]
+            ],
             // 'honeypot',
-            // 'csrf',
             // 'invalidchars',
         ],
         'after' => [

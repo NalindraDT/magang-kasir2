@@ -20,10 +20,20 @@ class WhatsappAnalyzer extends BaseController
     {
         $nomorTujuan = $this->request->getPost('nomor_tujuan');
         $token = getenv('whatsapp.token');
-        $phoneId = getenv('whatsapp.phone_number_id');
+        $phoneId = getenv('whatsapp.phone_number_id'); // Mengambil phone_number_id dari .env
+
+        // Tambahkan logging untuk debugging
+        log_message('info', '[WhatsappAnalyzer] Menerima permintaan kirimPesan.');
+        log_message('info', '[WhatsappAnalyzer] nomor_tujuan dari POST: ' . ($nomorTujuan ?? 'NULL'));
+        log_message('info', '[WhatsappAnalyzer] phone_number_id dari .env: ' . ($phoneId ?? 'NULL'));
 
         if (empty($nomorTujuan) || empty($token) || empty($phoneId)) {
-            return redirect()->back()->with('error', 'Nomor tujuan atau kredensial API belum diatur.');
+            $errorMessage = '';
+            if (empty($nomorTujuan)) $errorMessage .= 'Nomor tujuan belum diatur. ';
+            if (empty($token)) $errorMessage .= 'Token WhatsApp belum diatur. ';
+            if (empty($phoneId)) $errorMessage .= 'Phone ID WhatsApp belum diatur. ';
+            log_message('error', '[WhatsappAnalyzer] ' . $errorMessage);
+            return redirect()->back()->with('error', trim($errorMessage));
         }
 
         $url = "https://graph.facebook.com/v19.0/{$phoneId}/messages";
@@ -36,7 +46,7 @@ class WhatsappAnalyzer extends BaseController
                 'language' => [
                     'code' => 'en_US'
                 ],
-                'components' => [] // TAMBAHAN PENTING: Komponen wajib ada
+                'components' => [] // Wajib ada, meskipun kosong
             ]
         ];
 
@@ -52,48 +62,75 @@ class WhatsappAnalyzer extends BaseController
             ]);
 
             $body = json_decode($response->getBody(), true);
+            log_message('info', '[WhatsappAnalyzer] Respons API WhatsApp: ' . json_encode($body));
 
             if ($response->getStatusCode() === 200 && isset($body['messages'][0]['id'])) {
                 $outgoingTimestamp = time();
 
-                // Simpan pesan keluar ke database
-                $messageModel = new \App\Models\WhatsappMessageModel();
+                // Inisialisasi model
+                $messageModel = new WhatsappMessageModel();
+                $conversationModel = new ConversationModel();
+                $responseTimeModel = new ResponseTimeModel();
+
+                // --- LOGIKA PENCATATAN PESAN KELUAR DAN RESPONS OPERATOR ---
+
+                // 1. Simpan pesan keluar ke database (whatsapp_messages)
                 $messageModel->save([
                     'message_id'        => $body['messages'][0]['id'],
-                    'sender_number'     => $phoneId, // Ini nomor bisnis Anda
-                    'recipient_number'  => $nomorTujuan, // Ini nomor pelanggan
-                    'message_text'      => 'Template: Hello World',
+                    'sender_number'     => $phoneId,            // Sender adalah nomor WA Business Anda
+                    'recipient_number'  => $nomorTujuan,       // Penerima adalah nomor klien
+                    'message_text'      => 'Template: Hello World', // Isi template yang Anda kirim
                     'message_timestamp' => $outgoingTimestamp,
-                    'direction'         => 'out',
-                    'conversation_id'   => $nomorTujuan, // ID percakapan adalah nomor pelanggan
+                    'direction'         => 'out',              // Ini adalah pesan KELUAR
+                    'conversation_id'   => $nomorTujuan,       // Nomor tujuan sebagai conversation ID
                     'status'            => 'sent'
                 ]);
+                log_message('info', '[WhatsappAnalyzer] Pesan keluar berhasil disimpan ke whatsapp_messages untuk ' . $nomorTujuan . '. ID Pesan: ' . $body['messages'][0]['id']);
 
-                // Update atau buat data percakapan baru
-                $conversationModel = new \App\Models\ConversationModel();
+                // 2. Cek percakapan sebelumnya untuk menghitung waktu respons operator
                 $conversation = $conversationModel->where('client_number', $nomorTujuan)->first();
 
+                if ($conversation && $conversation['last_message_direction'] === 'in') {
+                    $responseTime = $outgoingTimestamp - (int)$conversation['last_message_timestamp'];
+
+                    $responseTimeModel->save([
+                        'conversation_id'       => $nomorTujuan,
+                        'response_time_seconds' => $responseTime,
+                        'response_direction'    => 'operator_to_client' // Arah respons operator ke klien
+                    ]);
+                    log_message('info', '[WhatsappAnalyzer] Waktu respons operator dicatat untuk ' . $nomorTujuan . ': ' . $responseTime . ' detik.');
+                } else {
+                    log_message('info', '[WhatsappAnalyzer] Tidak ada pesan masuk klien sebelumnya untuk menghitung waktu respons operator untuk ' . $nomorTujuan . '.');
+                }
+
+                // 3. Update atau buat data percakapan baru (conversation)
                 $convoData = [
-                    'client_number'            => $nomorTujuan,
-                    'last_message_timestamp'   => $outgoingTimestamp,
-                    'last_message_direction'   => 'out'
+                    'client_number'          => $nomorTujuan,
+                    'last_message_timestamp' => $outgoingTimestamp,
+                    'last_message_direction' => 'out' // Pesan terakhir adalah keluar
                 ];
 
                 if ($conversation) {
                     $conversationModel->update($conversation['id'], $convoData);
+                    log_message('info', '[WhatsappAnalyzer] Percakapan untuk ' . $nomorTujuan . ' diperbarui dengan pesan keluar.');
                 } else {
                     $conversationModel->insert($convoData);
+                    log_message('info', '[WhatsappAnalyzer] Percakapan baru untuk ' . $nomorTujuan . ' dibuat karena operator mengirim pesan pertama.');
                 }
 
                 return redirect()->back()->with('message', 'Pesan tes berhasil dikirim dan dicatat!');
             } else {
-                $errorMessage = $body['error']['message'] ?? 'Terjadi kesalahan yang tidak diketahui.';
+                $errorMessage = $body['error']['message'] ?? 'Terjadi kesalahan yang tidak diketahui dari API WhatsApp.';
+                log_message('error', '[WhatsappAnalyzer] Gagal mengirim pesan melalui API WhatsApp: ' . $errorMessage);
                 return redirect()->back()->with('error', 'Gagal mengirim pesan: ' . $errorMessage);
             }
         } catch (\Exception $e) {
+            log_message('error', '[WhatsappAnalyzer] Exception saat mengirim pesan: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Exception: ' . $e->getMessage());
         }
     }
+
+    // Metode proses(), buatRingkasan(), dan formatDetikKeHms() tetap sama
     public function proses()
     {
         // 1. Validasi File Upload
