@@ -4,6 +4,9 @@ namespace App\Controllers;
 
 use CodeIgniter\Controller;
 use DateTime;
+use App\Models\WhatsappMessageModel;
+use App\Models\ConversationModel;
+use App\Models\ResponseTimeModel;
 
 class WhatsappAnalyzer extends BaseController
 {
@@ -16,31 +19,27 @@ class WhatsappAnalyzer extends BaseController
     public function kirimPesan()
     {
         $nomorTujuan = $this->request->getPost('nomor_tujuan');
-
-        // Ambil kredensial dari file .env
         $token = getenv('whatsapp.token');
         $phoneId = getenv('whatsapp.phone_number_id');
 
-        // Validasi sederhana
         if (empty($nomorTujuan) || empty($token) || empty($phoneId)) {
             return redirect()->back()->with('error', 'Nomor tujuan atau kredensial API belum diatur.');
         }
 
-        // Siapkan data untuk dikirim ke API
         $url = "https://graph.facebook.com/v19.0/{$phoneId}/messages";
         $payload = [
             'messaging_product' => 'whatsapp',
             'to' => $nomorTujuan,
             'type' => 'template',
             'template' => [
-                'name' => 'hello_world', // Menggunakan template default
+                'name' => 'hello_world', // Pastikan nama template ini ada di akun WhatsApp Business Anda
                 'language' => [
                     'code' => 'en_US'
-                ]
+                ],
+                'components' => [] // TAMBAHAN PENTING: Komponen wajib ada
             ]
         ];
 
-        // Gunakan HTTP Client bawaan CodeIgniter
         $client = \Config\Services::curlrequest();
 
         try {
@@ -52,12 +51,59 @@ class WhatsappAnalyzer extends BaseController
                 'json' => $payload
             ]);
 
-            $body = json_decode($response->getBody());
+            $body = json_decode($response->getBody(), true);
 
-            if ($response->getStatusCode() === 200 && isset($body->messages[0]->id)) {
-                return redirect()->back()->with('message', 'Pesan tes berhasil dikirim!');
+            if ($response->getStatusCode() === 200 && isset($body['messages'][0]['id'])) {
+                $outgoingTimestamp = time();
+
+                // ---- LOGIKA BARU DIMULAI DI SINI ----
+
+                // 1. Simpan pesan keluar ke database
+                $messageModel = new WhatsappMessageModel();
+                $messageModel->save([
+                    'message_id'        => $body['messages'][0]['id'],
+                    'sender_number'     => $phoneId,
+                    'recipient_number'  => $nomorTujuan,
+                    'message_text'      => 'Template: Hello World',
+                    'message_timestamp' => $outgoingTimestamp,
+                    'direction'         => 'out', // Tandai sebagai pesan KELUAR
+                    'conversation_id'   => $nomorTujuan,
+                    'status'            => 'sent'
+                ]);
+
+                // 2. Cek percakapan sebelumnya untuk menghitung waktu respons operator
+                $conversationModel = new ConversationModel();
+                $conversation = $conversationModel->where('client_number', $nomorTujuan)->first();
+
+                if ($conversation && $conversation['last_message_direction'] === 'in') {
+                    $responseTime = $outgoingTimestamp - (int)$conversation['last_message_timestamp'];
+
+                    $responseTimeModel = new ResponseTimeModel();
+                    $responseTimeModel->save([
+                        'conversation_id'       => $nomorTujuan,
+                        'response_time_seconds' => $responseTime,
+                        'response_direction'    => 'operator_to_client'
+                    ]);
+                }
+
+                // 3. Update atau buat data percakapan baru
+                $convoData = [
+                    'client_number'            => $nomorTujuan,
+                    'last_message_timestamp'   => $outgoingTimestamp,
+                    'last_message_direction'   => 'out'
+                ];
+
+                if ($conversation) {
+                    $conversationModel->update($conversation['id'], $convoData);
+                } else {
+                    $conversationModel->insert($convoData);
+                }
+
+                // ---- AKHIR LOGIKA BARU ----
+
+                return redirect()->back()->with('message', 'Pesan tes berhasil dikirim dan dicatat!');
             } else {
-                $errorMessage = $body->error->message ?? 'Terjadi kesalahan yang tidak diketahui.';
+                $errorMessage = $body['error']['message'] ?? 'Terjadi kesalahan yang tidak diketahui.';
                 return redirect()->back()->with('error', 'Gagal mengirim pesan: ' . $errorMessage);
             }
         } catch (\Exception $e) {

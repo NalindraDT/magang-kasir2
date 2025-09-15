@@ -13,9 +13,12 @@ class WhatsappMessageModel extends Model
     protected $allowedFields    = [
         'message_id',
         'sender_number',
+        'recipient_number', // Tambahkan ini
         'message_text',
+        'direction',        // Tambahkan ini
+        'conversation_id',  // Tambahkan ini
         'message_timestamp',
         'status'
     ];
-    protected $useTimestamps    = true;
+    protected $useTimestamps    = false;
 }
