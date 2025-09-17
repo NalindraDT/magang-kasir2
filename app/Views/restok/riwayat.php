@@ -79,8 +79,8 @@
                                                     <?php foreach ($data['details'] as $detail): ?>
                                                         <tr class="border-t border-gray-200 dark:border-gray-700">
                                                             <td class="px-4 py-2"><?= esc($detail['nama_restoker']) ?></td>
-                                                            <td class="px-4 py-2"><?= date('d M Y', strtotime($detail['tanggal_pesan'])) ?></td>
-                                                            <td class="px-4 py-2"><?= $detail['tanggal_diterima'] ? date('d M Y', strtotime($detail['tanggal_diterima'])) : '---' ?></td>
+                                                            <td class="px-4 py-2"><?= (new DateTime($detail['tanggal_pesan'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Asia/Jakarta'))->format('d M Y') ?></td>
+                                                            <td class="px-4 py-2"><?= $detail['tanggal_diterima'] ? (new DateTime($detail['tanggal_diterima'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Asia/Jakarta'))->format('d M Y') : '---' ?></td>
                                                             <td class="px-4 py-2"><?= $detail['jumlah_pesan'] ?></td>
                                                             <td class="px-4 py-2"><?= $detail['jumlah_diterima'] ?? 0 ?></td>
                                                             <td class="px-4 py-2"><?= $detail['jumlah_retur'] ?? 0 ?></td>

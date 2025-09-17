@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,35 +12,44 @@
             width: 300px;
             margin: 0 auto;
         }
+
         .container {
             padding: 10px;
         }
-        .header, .footer {
+
+        .header,
+        .footer {
             text-align: center;
         }
+
         .line {
             border-top: 1px dashed black;
             margin: 10px 0;
         }
+
         .item {
             display: flex;
             justify-content: space-between;
             margin-bottom: 5px;
         }
+
         .total {
             font-weight: bold;
         }
+
         @media print {
             body {
                 width: 100%;
                 margin: 0;
             }
+
             .no-print {
                 display: none;
             }
         }
     </style>
 </head>
+
 <body onload="window.print(); window.onafterprint = function(){ window.close(); };">
     <div class="container">
         <div class="header">
@@ -48,8 +58,9 @@
         </div>
         <div class="line"></div>
         <div class="info">
-            <p><?= date('Y-m-d', strtotime($pesanan['tanggal'])) ?>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;Nalindra</p>
-            <p><?= date('H:i:s', strtotime($pesanan['tanggal'])) ?>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;</p>
+            <?php $tanggal_wib = (new DateTime($pesanan['tanggal'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Asia/Jakarta')); ?>
+            <p><?= $tanggal_wib->format('Y-m-d') ?>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;Nalindra</p>
+            <p><?= $tanggal_wib->format('H:i:s') ?>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;</p>
             <p>No.0-<?= $pesanan['id_pesanan'] ?></p>
         </div>
         <div class="line"></div>
@@ -87,4 +98,5 @@
         </div>
     </div>
 </body>
+
 </html>

@@ -65,60 +65,9 @@ class WhatsappAnalyzer extends BaseController
             log_message('info', '[WhatsappAnalyzer] Respons API WhatsApp: ' . json_encode($body));
 
             if ($response->getStatusCode() === 200 && isset($body['messages'][0]['id'])) {
-                $outgoingTimestamp = time();
-
-                // Inisialisasi model
-                $messageModel = new WhatsappMessageModel();
-                $conversationModel = new ConversationModel();
-                $responseTimeModel = new ResponseTimeModel();
-
-                // --- LOGIKA PENCATATAN PESAN KELUAR DAN RESPONS OPERATOR ---
-
-                // 1. Simpan pesan keluar ke database (whatsapp_messages)
-                $messageModel->save([
-                    'message_id'        => $body['messages'][0]['id'],
-                    'sender_number'     => $phoneId,            // Sender adalah nomor WA Business Anda
-                    'recipient_number'  => $nomorTujuan,       // Penerima adalah nomor klien
-                    'message_text'      => 'Template: Hello World', // Isi template yang Anda kirim
-                    'message_timestamp' => $outgoingTimestamp,
-                    'direction'         => 'out',              // Ini adalah pesan KELUAR
-                    'conversation_id'   => $nomorTujuan,       // Nomor tujuan sebagai conversation ID
-                    'status'            => 'sent'
-                ]);
-                log_message('info', '[WhatsappAnalyzer] Pesan keluar berhasil disimpan ke whatsapp_messages untuk ' . $nomorTujuan . '. ID Pesan: ' . $body['messages'][0]['id']);
-
-                // 2. Cek percakapan sebelumnya untuk menghitung waktu respons operator
-                $conversation = $conversationModel->where('client_number', $nomorTujuan)->first();
-
-                if ($conversation && $conversation['last_message_direction'] === 'in') {
-                    $responseTime = $outgoingTimestamp - (int)$conversation['last_message_timestamp'];
-
-                    $responseTimeModel->save([
-                        'conversation_id'       => $nomorTujuan,
-                        'response_time_seconds' => $responseTime,
-                        'response_direction'    => 'operator_to_client' // Arah respons operator ke klien
-                    ]);
-                    log_message('info', '[WhatsappAnalyzer] Waktu respons operator dicatat untuk ' . $nomorTujuan . ': ' . $responseTime . ' detik.');
-                } else {
-                    log_message('info', '[WhatsappAnalyzer] Tidak ada pesan masuk klien sebelumnya untuk menghitung waktu respons operator untuk ' . $nomorTujuan . '.');
-                }
-
-                // 3. Update atau buat data percakapan baru (conversation)
-                $convoData = [
-                    'client_number'          => $nomorTujuan,
-                    'last_message_timestamp' => $outgoingTimestamp,
-                    'last_message_direction' => 'out' // Pesan terakhir adalah keluar
-                ];
-
-                if ($conversation) {
-                    $conversationModel->update($conversation['id'], $convoData);
-                    log_message('info', '[WhatsappAnalyzer] Percakapan untuk ' . $nomorTujuan . ' diperbarui dengan pesan keluar.');
-                } else {
-                    $conversationModel->insert($convoData);
-                    log_message('info', '[WhatsappAnalyzer] Percakapan baru untuk ' . $nomorTujuan . ' dibuat karena operator mengirim pesan pertama.');
-                }
-
-                return redirect()->back()->with('message', 'Pesan tes berhasil dikirim dan dicatat!');
+                // LOGIKA PENCATATAN DIHAPUS DARI SINI.
+                // Webhook akan menangani semua pencatatan secara otomatis.
+                return redirect()->back()->with('message', 'Pesan tes berhasil dikirim!');
             } else {
                 $errorMessage = $body['error']['message'] ?? 'Terjadi kesalahan yang tidak diketahui dari API WhatsApp.';
                 log_message('error', '[WhatsappAnalyzer] Gagal mengirim pesan melalui API WhatsApp: ' . $errorMessage);
@@ -271,5 +220,105 @@ class WhatsappAnalyzer extends BaseController
         $menit = floor($sisaDetik / 60);
         $detik = $sisaDetik % 60;
         return sprintf('%02d:%02d:%02d', $jam, $menit, $detik);
+    }
+    public function kirimPesanKustom()
+    {
+        $nomorTujuan = $this->request->getPost('nomor_tujuan_kustom');
+        $token = getenv('whatsapp.token');
+        $phoneId = getenv('whatsapp.phone_number_id');
+
+        if (empty($nomorTujuan)) {
+            return redirect()->back()->with('error', 'Nomor tujuan harus diisi.');
+        }
+
+        $url = "https://graph.facebook.com/v19.0/{$phoneId}/messages";
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'to' => $nomorTujuan,
+            'type' => 'template',
+            'template' => [
+                // Ganti dengan nama template Anda
+                'name' => 'pesan_template_1',
+                'language' => [
+                    // Ganti 'id' jika Anda mendaftarkan template dalam Bahasa Indonesia
+                    'code' => 'id'
+                ]
+                // Bagian 'components' dihapus karena template ini tidak memiliki variabel
+            ]
+        ];
+
+        $client = \Config\Services::curlrequest();
+
+        try {
+            $response = $client->post($url, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token,
+                    'Content-Type' => 'application/json'
+                ],
+                'json' => $payload
+            ]);
+
+            $body = json_decode($response->getBody(), true);
+
+            if ($response->getStatusCode() === 200 && isset($body['messages'][0]['id'])) {
+                return redirect()->back()->with('message', 'Pesan template berhasil dikirim!');
+            } else {
+                $errorMessage = $body['error']['message'] ?? 'Kesalahan tidak diketahui.';
+                return redirect()->back()->with('error', 'Gagal mengirim pesan: ' . $errorMessage);
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Exception: ' . $e->getMessage());
+        }
+    }
+    public function balasPesanBiasa()
+    {
+        $nomorTujuan = $this->request->getPost('nomor_tujuan_balas');
+        $isiPesan = $this->request->getPost('isi_pesan_balas');
+        $token = getenv('whatsapp.token');
+        $phoneId = getenv('whatsapp.phone_number_id');
+
+        if (empty($nomorTujuan) || empty($isiPesan)) {
+            return redirect()->back()->with('error', 'Nomor tujuan dan isi pesan balasan harus diisi.');
+        }
+
+        // Cek apakah ada percakapan aktif dalam 24 jam terakhir
+        $conversationModel = new \App\Models\ConversationModel();
+        $lastConversation = $conversationModel->where('client_number', $nomorTujuan)->first();
+
+        // 86400 detik = 24 jam
+        // Cek jika tidak ada percakapan, ATAU jika pesan terakhir BUKAN dari klien, ATAU jika sudah lebih dari 24 jam
+        if (!$lastConversation || $lastConversation['last_message_direction'] !== 'in' || (time() - (int)$lastConversation['last_message_timestamp']) > 86400) {
+            return redirect()->back()->with('error', 'Tidak bisa mengirim balasan biasa. Jendela layanan 24 jam sudah tertutup atau belum ada pesan dari pelanggan. Gunakan pesan templat.');
+        }
+
+        $url = "https://graph.facebook.com/v19.0/{$phoneId}/messages";
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'to' => $nomorTujuan,
+            'type' => 'text',
+            'text' => [
+                'body' => $isiPesan
+            ]
+        ];
+
+        $client = \Config\Services::curlrequest();
+        try {
+            $response = $client->post($url, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token,
+                    'Content-Type' => 'application/json'
+                ],
+                'json' => $payload
+            ]);
+            $body = json_decode($response->getBody(), true);
+
+            if ($response->getStatusCode() === 200) {
+                return redirect()->back()->with('message', 'Balasan berhasil dikirim!');
+            } else {
+                return redirect()->back()->with('error', 'Gagal mengirim balasan: ' . ($body['error']['message'] ?? 'Error tidak diketahui'));
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Exception: ' . $e->getMessage());
+        }
     }
 }

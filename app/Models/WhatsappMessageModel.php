@@ -13,10 +13,10 @@ class WhatsappMessageModel extends Model
     protected $allowedFields    = [
         'message_id',
         'sender_number',
-        'recipient_number', // Tambahkan ini
+        'recipient_number', 
         'message_text',
-        'direction',        // Tambahkan ini
-        'conversation_id',  // Tambahkan ini
+        'direction',        
+        'conversation_id',  
         'message_timestamp',
         'status'
     ];

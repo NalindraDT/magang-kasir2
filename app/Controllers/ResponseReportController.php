@@ -3,13 +3,14 @@
 namespace App\Controllers;
 
 use App\Models\ResponseTimeModel;
+use App\Models\WhatsappMessageModel;
 
 class ResponseReportController extends BaseController
 {
     public function index()
     {
         $responseTimeModel = new ResponseTimeModel();
-        
+
         // Menghitung rata-rata waktu respons operator
         $avgOperator = $responseTimeModel
             ->selectAvg('response_time_seconds', 'avg_response')
@@ -29,5 +30,27 @@ class ResponseReportController extends BaseController
         ];
 
         return view('whatsapp_analyzer/report', $data);
+    }
+    public function clearResponseLogs()
+    {
+        $responseTimeModel = new ResponseTimeModel();
+
+        // Menggunakan truncate untuk menghapus semua data dan mereset tabel
+        $responseTimeModel->truncate();
+
+        // Mengirim pesan sukses kembali ke halaman laporan
+        return redirect()->to(base_url('admin/whatsapp-report'))
+            ->with('message', 'Semua data log waktu respons berhasil dihapus.');
+    }
+    public function chatLog()
+    {
+        $messageModel = new WhatsappMessageModel();
+
+        $data = [
+            'messages' => $messageModel->orderBy('message_timestamp', 'DESC')->paginate(25), // 25 pesan per halaman
+            'pager'    => $messageModel->pager,
+        ];
+
+        return view('whatsapp_analyzer/log_chat', $data);
     }
 }

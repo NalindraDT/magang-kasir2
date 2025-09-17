@@ -35,7 +35,7 @@
                 <h2 class="text-3xl font-bold mt-1"><?= $jumlahTransaksi ?></h2>
             </div>
         </div>
-        
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div>
                 <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Produk Terlaris</h2>
@@ -50,14 +50,17 @@
                         </thead>
                         <tbody>
                             <?php if (empty($produkTerlaris)): ?>
-                                <tr><td colspan="3" class="text-center py-4">Tidak ada data.</td></tr>
-                            <?php else: ?>
-                                <?php $no = 1; foreach ($produkTerlaris as $nama => $jumlah): ?>
-                                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                    <td class="px-6 py-4"><?= $no++ ?></td>
-                                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white"><?= esc($nama) ?></td>
-                                    <td class="px-6 py-4"><?= $jumlah ?></td>
+                                <tr>
+                                    <td colspan="3" class="text-center py-4">Tidak ada data.</td>
                                 </tr>
+                            <?php else: ?>
+                                <?php $no = 1;
+                                foreach ($produkTerlaris as $nama => $jumlah): ?>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <td class="px-6 py-4"><?= $no++ ?></td>
+                                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white"><?= esc($nama) ?></td>
+                                        <td class="px-6 py-4"><?= $jumlah ?></td>
+                                    </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
@@ -78,14 +81,18 @@
                         </thead>
                         <tbody>
                             <?php if (empty($transaksi)): ?>
-                                <tr><td colspan="3" class="text-center py-4">Tidak ada transaksi pada periode ini.</td></tr>
+                                <tr>
+                                    <td colspan="3" class="text-center py-4">Tidak ada transaksi pada periode ini.</td>
+                                </tr>
                             <?php else: ?>
                                 <?php foreach ($transaksi as $item): ?>
-                                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                    <td class="px-6 py-4"><?= date('d M Y, H:i', strtotime($item['tanggal'])) ?></td>
-                                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white"><?= esc($item['nama_produk']) ?> (x<?= $item['kuantitas'] ?>)</td>
-                                    <td class="px-6 py-4">Rp <?= number_format($item['total_harga'], 0, ',', '.') ?></td>
-                                </tr>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <td class="px-6 py-4">
+                                            <?= (new DateTime($item['tanggal'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Asia/Jakarta'))->format('d M Y, H:i') ?>
+                                        </td>
+                                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white"><?= esc($item['nama_produk']) ?> (x<?= $item['kuantitas'] ?>)</td>
+                                        <td class="px-6 py-4">Rp <?= number_format($item['total_harga'], 0, ',', '.') ?></td>
+                                    </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>

@@ -16,7 +16,7 @@ class ConversationModel extends Model
         'last_message_direction',
     ];
 
-    // Pastikan ini diatur ke true
+
     protected $useTimestamps = true; 
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';

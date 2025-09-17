@@ -60,10 +60,14 @@ $routes->group('admin', ['filter' => 'auth_admin'], function ($routes) {
     $routes->get('laporan', 'LaporanController::index');
 
     $routes->get('whatsapp-report', 'ResponseReportController::index');
-
+    $routes->get('whatsapp-report/clear', 'ResponseReportController::clearResponseLogs');
+    $routes->get('chat-log', 'ResponseReportController::chatLog');
+    
     $routes->get('whatsapp-analyzer', 'WhatsappAnalyzer::index');
     $routes->post('whatsapp-analyzer/proses', 'WhatsappAnalyzer::proses');
     $routes->post('whatsapp-analyzer/kirim', 'WhatsappAnalyzer::kirimPesan');
+    $routes->post('whatsapp-analyzer/kirim-kustom', 'WhatsappAnalyzer::kirimPesanKustom');
+    $routes->post('whatsapp-analyzer/balas-biasa', 'WhatsappAnalyzer::balasPesanBiasa');
 });
 
 // Pindahkan rute login dan logout keluar dari grup admin

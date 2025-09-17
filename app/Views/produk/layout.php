@@ -14,29 +14,26 @@
             font-family: 'Inter', sans-serif;
         }
 
-        /* == CSS ANIMASI DROPDOWN BARU == */
-        #dropdown-stok {
+        /* CSS untuk animasi dropdown */
+        .sidebar-dropdown {
             overflow: hidden;
             transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
             max-height: 0;
             opacity: 0;
         }
 
-        #dropdown-stok:not(.hidden) {
+        .sidebar-dropdown:not(.hidden) {
             max-height: 500px;
-            /* Atur nilai yang cukup besar */
             opacity: 1;
         }
 
-        [data-collapse-toggle="dropdown-stok"][aria-expanded="true"] svg:last-child {
+        [data-collapse-toggle][aria-expanded="true"] svg.dropdown-arrow {
             transform: rotate(180deg);
         }
 
-        [data-collapse-toggle="dropdown-stok"] svg:last-child {
+        [data-collapse-toggle] svg.dropdown-arrow {
             transition: transform 0.3s ease-out;
         }
-
-        /* ============================== */
     </style>
 </head>
 
@@ -134,33 +131,47 @@
                         <span class="flex-1 ms-3 whitespace-nowrap">Laporan</span>
                     </a>
                 </li>
+                
                 <li>
-                    <a href="<?= base_url('admin/whatsapp-analyzer') ?>" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                        <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9.5 9.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5zm3 0c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5zm3 0c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5z" />
+                    <button type="button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" aria-controls="dropdown-whatsapp" data-collapse-toggle="dropdown-whatsapp">
+                        <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M20.5 3.5A12.25 12.25 0 003.5 20.5a12.25 12.25 0 0017-17zM8.7 17.3c-.3-.2-1.8-1-2-1.9-.3-1 .1-1.5.3-1.8.2-.3.4-.3.6-.3h.2c.2 0 .4.1.6.5.2.4.7 1.6.8 1.8s.2.2.3.1c.1-.1 1-1.2 1.9-2.3.8-1 1.3-1.8 1.5-2.2.2-.4 0-.6-.1-.8s-.6-1.5-.9-2c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.4-.2.2-.9 1-.9 2.4s1 2.8 1.1 3c.1.2 2 3.2 4.9 4.3 2.8 1.1 2.8.7 3.3.7.5 0 1.8-.7 2-1.5.2-.7.2-1.4.1-1.5-.1-.1-.3-.2-.6-.3h-.2z" />
                         </svg>
-                        <span class="flex-1 ms-3 whitespace-nowrap">WA Analyzer</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= base_url('admin/whatsapp-report') ?>" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                        <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9.5 9.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5zm3 0c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5zm3 0c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5z" />
+                        <span class="flex-1 ms-3 text-left rtl:text-right whitespace-nowrap">WhatsApp</span>
+                        <svg class="w-3 h-3 dropdown-arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4" />
                         </svg>
-                        <span class="flex-1 ms-3 whitespace-nowrap">WA report`</span>
-                    </a>
+                    </button>
+                    <ul id="dropdown-whatsapp" class="hidden py-2 space-y-2 sidebar-dropdown">
+                        <li>
+                            <a href="<?= base_url('admin/whatsapp-analyzer') ?>" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
+                                WA Tools
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= base_url('admin/chat-log') ?>" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
+                                Log Chat
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= base_url('admin/whatsapp-report') ?>" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
+                                Laporan Respons
+                            </a>
+                        </li>
+                    </ul>
                 </li>
+                
                 <li>
-                    <button type="button" id="stok-toggle-button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" aria-controls="dropdown-stok" data-collapse-toggle="dropdown-stok">
+                    <button type="button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" aria-controls="dropdown-stok" data-collapse-toggle="dropdown-stok">
                         <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
                             <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h16v3H4V6zm0 5h16v7H4v-7z" clip-rule="evenodd" />
                         </svg>
                         <span class="flex-1 ms-3 text-left rtl:text-right whitespace-nowrap">Stok</span>
-                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                        <svg class="w-3 h-3 dropdown-arrow" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4" />
                         </svg>
                     </button>
-                    <ul id="dropdown-stok" class="hidden py-2 space-y-2">
+                    <ul id="dropdown-stok" class="hidden py-2 space-y-2 sidebar-dropdown">
                         <li>
                             <a href="<?= base_url('admin/restok/supplier') ?>" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Manajemen Supplier</a>
                         </li>
@@ -189,18 +200,14 @@
         sidebarToggle.addEventListener('click', () => {
             sidebar.classList.toggle('-translate-x-full');
         });
-
-        // == JAVASCRIPT ANIMASI DROPDOWN BARU ==
-        // Menambahkan event listener ke tombol dropdown Stok
-        const stokToggleButton = document.getElementById('stok-toggle-button');
-        if (stokToggleButton) {
-            stokToggleButton.addEventListener('click', function() {
-                // Toggle atribut aria-expanded untuk CSS
+        
+        // Logika untuk menangani klik pada tombol dropdown
+        document.querySelectorAll('[data-collapse-toggle]').forEach(function (button) {
+            button.addEventListener('click', function () {
                 const isExpanded = this.getAttribute('aria-expanded') === 'true';
                 this.setAttribute('aria-expanded', !isExpanded);
             });
-        }
-        // =====================================
+        });
     </script>
     <?= $this->renderSection('scripts') ?>
 </body>
