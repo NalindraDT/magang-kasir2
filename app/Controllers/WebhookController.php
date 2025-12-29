@@ -43,8 +43,7 @@ class WebhookController extends Controller
 
                 if (isset($value['messages'][0]) && $value['messages'][0]['type'] === 'text') {
                     $this->handleIncomingMessage($value['messages'][0]);
-                }
-                else if (isset($value['statuses'][0])) {
+                } else if (isset($value['statuses'][0])) {
                     $this->handleStatusUpdate($value['statuses'][0]);
                 } else {
                     log_message('warning', '[Webhook] Menerima payload POST, tetapi bukan pesan teks atau status yang dikenali.');
@@ -58,7 +57,7 @@ class WebhookController extends Controller
 
         return $this->response->setStatusCode(405, 'Method Not Allowed');
     }
-    
+
     private function handleIncomingMessage(array $messageData)
     {
         // ... (Fungsi ini tidak diubah sama sekali)
@@ -116,56 +115,50 @@ class WebhookController extends Controller
         }
 
         $clientNumber = $statusData['recipient_id'];
+        $messageId = $statusData['id'];
 
-        try {
-            $conversationModel = new ConversationModel();
-            $responseTimeModel = new ResponseTimeModel();
-            $messageModel = new WhatsappMessageModel(); // Tambahkan ini
+        $conversationModel = new ConversationModel();
+        $responseTimeModel = new ResponseTimeModel();
+        $messageModel = new WhatsappMessageModel();
 
-            // ==========================================================
-            // PENAMBAHAN KODE DIMULAI DI SINI
-            // ==========================================================
-            // Selalu simpan jejak pesan keluar ke log, apa pun kondisinya.
-            $existingMessage = $messageModel->where('message_id', $statusData['id'])->first();
-            if (!$existingMessage) {
-                $messageModel->save([
-                    'message_id'        => $statusData['id'],
-                    'sender_number'     => 'OPERATOR',
-                    'recipient_number'  => $clientNumber,
-                    'message_text'      => 'Message sent by operator.', // Teks generik karena isi asli tidak ada di webhook status
-                    'message_timestamp' => $statusData['timestamp'],
-                    'direction'         => 'out',
-                    'conversation_id'   => $clientNumber,
-                    'status'            => 'sent'
+        // PERUBAHAN LOGIKA: Cari pesan yang sudah disimpan sebelumnya dan update statusnya
+        $existingMessage = $messageModel->where('message_id', $messageId)->first();
+        if ($existingMessage) {
+            $messageModel->update($existingMessage['id'], [
+                'message_timestamp' => $statusData['timestamp'],
+                'status'            => 'sent'
+            ]);
+        } else {
+            // Fallback jika pesan dikirim dari luar aplikasi (misal: WhatsApp Web)
+            $messageModel->save([
+                'message_id'        => $messageId,
+                'sender_number'     => 'OPERATOR',
+                'recipient_number'  => $clientNumber,
+                'message_text'      => 'Message sent from outside app.', // Teks generik
+                'message_timestamp' => $statusData['timestamp'],
+                'direction'         => 'out',
+                'conversation_id'   => $clientNumber,
+                'status'            => 'sent'
+            ]);
+        }
+
+        // ... (Logika perhitungan waktu respons dan update conversation tetap sama) ...
+        $conversation = $conversationModel->where('client_number', $clientNumber)->first();
+        if ($conversation && $conversation['last_message_direction'] === 'in') {
+            $responseTime = (int)$statusData['timestamp'] - (int)$conversation['last_message_timestamp'];
+
+            if ($responseTime >= 0) {
+                $responseTimeModel->save([
+                    'conversation_id'       => $clientNumber,
+                    'response_time_seconds' => $responseTime,
+                    'response_direction'    => 'operator_to_client'
                 ]);
             }
-            // ==========================================================
-            // PENAMBAHAN KODE SELESAI
-            // ==========================================================
-            
-            // KONDISI PENTING: Logika di bawah ini tidak diubah dan tetap sama.
-            $conversation = $conversationModel->where('client_number', $clientNumber)->first();
-            if ($conversation && $conversation['last_message_direction'] === 'in') {
-                $responseTime = (int)$statusData['timestamp'] - (int)$conversation['last_message_timestamp'];
 
-                if ($responseTime >= 0) {
-                    $responseTimeModel->save([
-                        'conversation_id'       => $clientNumber,
-                        'response_time_seconds' => $responseTime,
-                        'response_direction'    => 'operator_to_client'
-                    ]);
-                    log_message('info', '[Webhook] Waktu respons OPERATOR dicatat untuk ' . $clientNumber . '.');
-                }
-
-                $conversationModel->update($conversation['id'], [
-                    'last_message_timestamp' => $statusData['timestamp'],
-                    'last_message_direction' => 'out'
-                ]);
-            } else {
-                log_message('info', '[Webhook] Status "sent" untuk ' . $clientNumber . ' diterima, tetapi bukan balasan pertama. Status percakapan tidak diubah.');
-            }
-        } catch (\Exception $e) {
-            log_message('error', '[Webhook DB Error] Error saat memproses status update: ' . $e->getMessage());
+            $conversationModel->update($conversation['id'], [
+                'last_message_timestamp' => $statusData['timestamp'],
+                'last_message_direction' => 'out'
+            ]);
         }
     }
 }

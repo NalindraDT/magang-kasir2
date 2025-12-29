@@ -226,6 +226,7 @@ class WhatsappAnalyzer extends BaseController
         $nomorTujuan = $this->request->getPost('nomor_tujuan_kustom');
         $token = getenv('whatsapp.token');
         $phoneId = getenv('whatsapp.phone_number_id');
+        $namaTemplate = 'pesan_template_1'; // Nama template Anda
 
         if (empty($nomorTujuan)) {
             return redirect()->back()->with('error', 'Nomor tujuan harus diisi.');
@@ -237,18 +238,12 @@ class WhatsappAnalyzer extends BaseController
             'to' => $nomorTujuan,
             'type' => 'template',
             'template' => [
-                // Ganti dengan nama template Anda
-                'name' => 'pesan_template_1',
-                'language' => [
-                    // Ganti 'id' jika Anda mendaftarkan template dalam Bahasa Indonesia
-                    'code' => 'id'
-                ]
-                // Bagian 'components' dihapus karena template ini tidak memiliki variabel
+                'name' => $namaTemplate,
+                'language' => ['code' => 'id']
             ]
         ];
 
         $client = \Config\Services::curlrequest();
-
         try {
             $response = $client->post($url, [
                 'headers' => [
@@ -261,15 +256,27 @@ class WhatsappAnalyzer extends BaseController
             $body = json_decode($response->getBody(), true);
 
             if ($response->getStatusCode() === 200 && isset($body['messages'][0]['id'])) {
+                // PENAMBAHAN: Simpan pesan template ke database
+                $messageModel = new WhatsappMessageModel();
+                $messageModel->save([
+                    'message_id'        => $body['messages'][0]['id'],
+                    'sender_number'     => 'OPERATOR',
+                    'recipient_number'  => $nomorTujuan,
+                    'message_text'      => 'Template Sent: ' . $namaTemplate, // Catat nama template yang dikirim
+                    'message_timestamp' => time(),
+                    'direction'         => 'out',
+                    'conversation_id'   => $nomorTujuan,
+                    'status'            => 'sent_api' // Status khusus untuk menandakan ini dikirim via API
+                ]);
                 return redirect()->back()->with('message', 'Pesan template berhasil dikirim!');
             } else {
-                $errorMessage = $body['error']['message'] ?? 'Kesalahan tidak diketahui.';
-                return redirect()->back()->with('error', 'Gagal mengirim pesan: ' . $errorMessage);
+                return redirect()->back()->with('error', 'Gagal mengirim pesan: ' . ($body['error']['message'] ?? 'Error'));
             }
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Exception: ' . $e->getMessage());
         }
     }
+
     public function balasPesanBiasa()
     {
         $nomorTujuan = $this->request->getPost('nomor_tujuan_balas');
@@ -281,13 +288,18 @@ class WhatsappAnalyzer extends BaseController
             return redirect()->back()->with('error', 'Nomor tujuan dan isi pesan balasan harus diisi.');
         }
 
-        // Cek apakah ada percakapan aktif dalam 24 jam terakhir
         $conversationModel = new \App\Models\ConversationModel();
-        $lastConversation = $conversationModel->where('client_number', $nomorTujuan)->first();
+        $messageModel = new \App\Models\WhatsappMessageModel();
 
-        // 86400 detik = 24 jam
-        // Cek jika tidak ada percakapan, ATAU jika pesan terakhir BUKAN dari klien, ATAU jika sudah lebih dari 24 jam
-        if (!$lastConversation || $lastConversation['last_message_direction'] !== 'in' || (time() - (int)$lastConversation['last_message_timestamp']) > 86400) {
+        // PERUBAHAN LOGIKA: Cari pesan terakhir DARI KLIEN ('in')
+        $lastClientMessage = $messageModel
+            ->where('conversation_id', $nomorTujuan)
+            ->where('direction', 'in')
+            ->orderBy('message_timestamp', 'DESC')
+            ->first();
+
+        // Cek jika tidak ada pesan sama sekali dari klien, ATAU jika pesan terakhir klien sudah lebih dari 24 jam
+        if (!$lastClientMessage || (time() - (int)$lastClientMessage['message_timestamp']) > 86400) {
             return redirect()->back()->with('error', 'Tidak bisa mengirim balasan biasa. Jendela layanan 24 jam sudah tertutup atau belum ada pesan dari pelanggan. Gunakan pesan templat.');
         }
 
@@ -296,26 +308,31 @@ class WhatsappAnalyzer extends BaseController
             'messaging_product' => 'whatsapp',
             'to' => $nomorTujuan,
             'type' => 'text',
-            'text' => [
-                'body' => $isiPesan
-            ]
+            'text' => ['body' => $isiPesan]
         ];
 
         $client = \Config\Services::curlrequest();
         try {
             $response = $client->post($url, [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $token,
-                    'Content-Type' => 'application/json'
-                ],
+                'headers' => ['Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/json'],
                 'json' => $payload
             ]);
             $body = json_decode($response->getBody(), true);
 
-            if ($response->getStatusCode() === 200) {
+            if ($response->getStatusCode() === 200 && isset($body['messages'][0]['id'])) {
+                $messageModel->save([
+                    'message_id'        => $body['messages'][0]['id'],
+                    'sender_number'     => 'OPERATOR',
+                    'recipient_number'  => $nomorTujuan,
+                    'message_text'      => $isiPesan,
+                    'message_timestamp' => time(),
+                    'direction'         => 'out',
+                    'conversation_id'   => $nomorTujuan,
+                    'status'            => 'sent_api'
+                ]);
                 return redirect()->back()->with('message', 'Balasan berhasil dikirim!');
             } else {
-                return redirect()->back()->with('error', 'Gagal mengirim balasan: ' . ($body['error']['message'] ?? 'Error tidak diketahui'));
+                return redirect()->back()->with('error', 'Gagal mengirim balasan: ' . ($body['error']['message'] ?? 'Error'));
             }
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Exception: ' . $e->getMessage());

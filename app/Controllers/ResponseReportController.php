@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\ResponseTimeModel;
 use App\Models\WhatsappMessageModel;
+use App\Models\ConversationModel;
 
 class ResponseReportController extends BaseController
 {
@@ -52,5 +53,17 @@ class ResponseReportController extends BaseController
         ];
 
         return view('whatsapp_analyzer/log_chat', $data);
+    }
+    public function clearChatLogs()
+    {
+        $messageModel = new WhatsappMessageModel();
+        $conversationModel = new ConversationModel();
+
+        // Hapus semua data dari kedua tabel
+        $messageModel->truncate();
+        $conversationModel->truncate();
+
+        return redirect()->to(base_url('admin/chat-log'))
+            ->with('message', 'Semua data log percakapan berhasil dihapus.');
     }
 }

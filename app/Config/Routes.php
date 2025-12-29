@@ -62,6 +62,7 @@ $routes->group('admin', ['filter' => 'auth_admin'], function ($routes) {
     $routes->get('whatsapp-report', 'ResponseReportController::index');
     $routes->get('whatsapp-report/clear', 'ResponseReportController::clearResponseLogs');
     $routes->get('chat-log', 'ResponseReportController::chatLog');
+    $routes->get('chat-log/clear', 'ResponseReportController::clearChatLogs');
     
     $routes->get('whatsapp-analyzer', 'WhatsappAnalyzer::index');
     $routes->post('whatsapp-analyzer/proses', 'WhatsappAnalyzer::proses');
